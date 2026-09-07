@@ -1,5 +1,5 @@
 -- ============================================================
--- PRIMORDIAL CS2 THEME - HYBRID ESP & SILENT AIM & WALLBANG HUB
+-- PRIMORDIAL CS2 THEME - HYBRID ESP & SILENT AIM & WALLBANG & GUN MODS
 -- ============================================================
 
 pcall(function() 
@@ -269,6 +269,12 @@ CFG.aim = type(CFG.aim) == "table" and CFG.aim or {}
 local A = CFG.aim
 local AIM_DEF = { enabled = false, fov = 180, part = "Head", visibleCheck = true, fovCircle = true, maxDist = 3000, wallbang = false }
 for k, v in pairs(AIM_DEF) do if A[k] == nil then A[k] = v end end
+
+-- ===================== GUN MODS CONFIG =====================
+CFG.gunmod = type(CFG.gunmod) == "table" and CFG.gunmod or {}
+local G = CFG.gunmod
+local GUNMOD_DEF = { firerate = false, firerateValue = 0.05, noRecoil = false, noSpread = false, autoFire = false }
+for k, v in pairs(GUNMOD_DEF) do if G[k] == nil then G[k] = v end end
 
 local COL_ENEMY = Color3.fromRGB(150, 120, 255)
 local COL_TEAM = Color3.fromRGB(100, 180, 255)
@@ -568,6 +574,114 @@ task.spawn(function()
     end)
 end)
 
+-- ===================== GUN MODS LOGIC & HOOKS =====================
+local originalFirerate = {}
+local firerateobjs = {}
+
+pcall(function()
+    for _, obj in next, getgc(true) do  
+        -- Rapid Fire (FireRate)
+        if type(obj) == "table" and rawget(obj, "FireRate") then
+            pcall(function()
+                table.insert(originalFirerate, table.clone(obj))
+                table.insert(firerateobjs, obj)
+            end)
+        end
+
+        -- Auto Fire (Auto / FireMode)
+        if type(obj) == "table" and (rawget(obj, "Auto") ~= nil or rawget(obj, "FireMode") ~= nil) then
+            pcall(function()
+                local oldIndex
+                oldIndex = hookmetatable(obj, "__index", function(t, k)
+                    if G.autoFire and (k == "Auto" or k == "FireMode") then
+                        return true
+                    end
+                    return oldIndex(t, k)
+                end)
+            end)
+        end
+
+        -- No Recoil (setWeaponRecoil)
+        if type(obj) == "table" and rawget(obj, "setWeaponRecoil") then
+            pcall(function()
+                local oldSetWeaponRecoil
+                oldSetWeaponRecoil = hookfunction(obj.setWeaponRecoil, function(...)
+                    if G.noRecoil then
+                        return
+                    end
+                    return oldSetWeaponRecoil(...)
+                end)
+            end)
+        end
+
+        -- No Recoil (calculateRecoilOffset)
+        if type(obj) == "function" and debug.getinfo(obj).name == "calculateRecoilOffset" then
+            pcall(function()
+                local calculateRecoilOffset
+                calculateRecoilOffset = hookfunction(obj, function(...) 
+                    if G.noRecoil then
+                        return UDim2.new() 
+                    end
+                    return calculateRecoilOffset(...)
+                end)
+            end)
+        end 
+
+        -- No Recoil (weaponKick)
+        if type(obj) == "table" and rawget(obj, "weaponKick") then
+            pcall(function()
+                local oldweaponkick
+                oldweaponkick = hookfunction(obj.weaponKick, function(p1, p2)
+                    if G.noRecoil then
+                        return
+                    end
+                    return oldweaponkick(p1, p2)
+                end)
+            end)
+        end 
+        
+        -- No Spread (getTrueSpread)
+        if type(obj) == "table" and rawget(obj, "getTrueSpread") then
+            pcall(function()
+                local oldgettruespread
+                oldgettruespread = hookfunction(obj.getTrueSpread, function(p1)  
+                    if G.noSpread then
+                        return 0
+                    end
+                    return oldgettruespread(p1)
+                end)
+            end)
+        end
+    end
+end)
+
+-- FireRate Loop
+task.spawn(function()
+    while task.wait(0.05) do
+        pcall(function()
+            if G.firerate then
+                for _, obj in next, firerateobjs do
+                    pcall(function()
+                        setreadonly(obj, false)
+                        rawset(obj, "FireRate", math.max(G.firerateValue or 0.05, 0.001))
+                        setreadonly(obj, true)
+                    end)
+                end
+            else
+                for i, obj in next, firerateobjs do
+                    pcall(function()
+                        if originalFirerate[i] then
+                            setreadonly(obj, false)
+                            rawset(obj, "FireRate", originalFirerate[i].FireRate) 
+                            setreadonly(obj, true)
+                        end
+                    end)
+                end
+            end
+        end)
+    end
+end)
+
 local espConn = RunService.RenderStepped:Connect(function()
     pcall(silentAimFrame)
     pcall(espFrame)
@@ -759,11 +873,11 @@ navLayout.Parent = navBar
 local pageTabs, currentPage = {}, "skins"
 local setPage
 
-for _, nm in ipairs({ "SKINS", "ESP", "SILENT" }) do
+for _, nm in ipairs({ "SKINS", "ESP", "SILENT", "GUN MODS" }) do
     local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0.31, 0, 0, 26)
+    b.Size = UDim2.new(0.23, 0, 0, 26)
     b.BackgroundColor3 = T.card
-    b.BackgroundTransparency = 0.4
+    b.BackgroundTransparency = 0
     b.Text = nm
     b.TextColor3 = T.dim
     b.TextSize = 11
@@ -781,7 +895,7 @@ local left = Instance.new("Frame")
 left.Size = isMobile and UDim2.new(0, 190, 1, -154) or UDim2.new(0, 230, 1, -154)
 left.Position = UDim2.new(0, 12, 0, 56)
 left.BackgroundColor3 = T.panel
-left.BackgroundTransparency = 0.2
+left.BackgroundTransparency = 0
 left.BorderSizePixel = 0
 left.Parent = main
 corner(left, 8)
@@ -791,7 +905,7 @@ local search = Instance.new("TextBox")
 search.Size = UDim2.new(1, -16, 0, 30)
 search.Position = UDim2.new(0, 8, 0, 8)
 search.BackgroundColor3 = T.card
-search.BackgroundTransparency = 0.3
+search.BackgroundTransparency = 0
 search.PlaceholderText = "Search weapons..."
 search.PlaceholderColor3 = T.dim
 search.Text = ""
@@ -837,7 +951,7 @@ local right = Instance.new("Frame")
 right.Size = isMobile and UDim2.new(1, -218, 1, -154) or UDim2.new(1, -266, 1, -154)
 right.Position = isMobile and UDim2.new(0, 206, 0, 56) or UDim2.new(0, 254, 0, 56)
 right.BackgroundColor3 = T.panel
-right.BackgroundTransparency = 0.2
+right.BackgroundTransparency = 0
 right.BorderSizePixel = 0
 right.Parent = main
 corner(right, 8)
@@ -850,7 +964,7 @@ local resetBtn = Instance.new("TextButton")
 resetBtn.Size = UDim2.new(0, 80, 0, 26)
 resetBtn.Position = UDim2.new(1, -90, 0, 12)
 resetBtn.BackgroundColor3 = T.card
-resetBtn.BackgroundTransparency = 0.3
+resetBtn.BackgroundTransparency = 0
 resetBtn.Text = "Reset"
 resetBtn.TextColor3 = T.dim
 resetBtn.TextSize = 12
@@ -881,7 +995,7 @@ local bottom = Instance.new("Frame")
 bottom.Size = UDim2.new(1, -24, 0, 42)
 bottom.Position = UDim2.new(0, 12, 1, -92)
 bottom.BackgroundColor3 = T.panel
-bottom.BackgroundTransparency = 0.2
+bottom.BackgroundTransparency = 0
 bottom.BorderSizePixel = 0
 bottom.Parent = main
 corner(bottom, 8)
@@ -895,7 +1009,7 @@ local function toggle(parent, text, key, w, onChange, tbl)
     local row = Instance.new("TextButton")
     row.Size = UDim2.new(0, w or 120, 0, 30)
     row.BackgroundColor3 = T.card
-    row.BackgroundTransparency = 0.3
+    row.BackgroundTransparency = 0
     row.Text = ""
     row.AutoButtonColor = false
     row.Parent = parent
@@ -930,7 +1044,7 @@ local function slider(parent, text, tbl, key, MIN, MAX, step, pos, width)
     row.Size = UDim2.new(0, width or 360, 0, 46)
     row.Position = pos
     row.BackgroundColor3 = T.card
-    row.BackgroundTransparency = 0.3
+    row.BackgroundTransparency = 0
     row.BorderSizePixel = 0
     row.Parent = parent
     corner(row, 6)
@@ -1053,6 +1167,36 @@ toggle(aimGrid, "Visible Check", "visibleCheck", 165, nil, A)
 toggle(aimGrid, "Wallbang", "wallbang", 165, nil, A)
 
 slider(aimPage, "FOV (px)", A, "fov", 30, 600, 10, UDim2.new(0, 12, 0, 150), isMobile and 260 or 300)
+
+-- GUN MODS Page
+local gunModPage = Instance.new("Frame")
+gunModPage.Size = UDim2.new(1, -24, 1, -104)
+gunModPage.Position = UDim2.new(0, 12, 0, 56)
+gunModPage.BackgroundColor3 = T.panel
+gunModPage.BackgroundTransparency = 0.2
+gunModPage.BorderSizePixel = 0
+gunModPage.Visible = false
+gunModPage.Parent = main
+corner(gunModPage, 8)
+stroke(gunModPage, T.stroke, 1, 0.5)
+
+local gmTitle = label(gunModPage, "Gun Modifications", 14, T.text, CARTOON_FONT) gmTitle.Size = UDim2.new(1, -24, 0, 30) gmTitle.Position = UDim2.new(0, 12, 0, 8)
+local gmSub = label(gunModPage, "Modify weapon firerate, recoil, and spread behavior.", 11, T.dim) gmSub.Size = UDim2.new(1, -24, 0, 14) gmSub.Position = UDim2.new(0, 12, 0, 34)
+
+local gmGrid = Instance.new("Frame")
+gmGrid.Size = UDim2.new(1, -24, 0, 120)
+gmGrid.Position = UDim2.new(0, 12, 0, 60)
+gmGrid.BackgroundTransparency = 1
+gmGrid.Parent = gunModPage
+
+local gmg = Instance.new("UIGridLayout") gmg.CellSize = isMobile and UDim2.new(0, 165, 0, 34) or UDim2.new(0, 200, 0, 34) gmg.CellPadding = UDim2.new(0, 8, 0, 8) gmg.Parent = gmGrid
+
+toggle(gmGrid, "Rapid Fire", "firerate", 165, nil, G)
+toggle(gmGrid, "Full Auto", "autoFire", 165, nil, G)
+toggle(gmGrid, "No Recoil", "noRecoil", 165, nil, G)
+toggle(gmGrid, "No Spread", "noSpread", 165, nil, G)
+
+slider(gunModPage, "Fire Delay (Sec)", G, "firerateValue", 0.01, 0.2, 0.01, UDim2.new(0, 12, 0, 160), isMobile and 340 or 408)
 
 -- Skins Logic UI
 local selectedWeapon = nil
@@ -1190,6 +1334,7 @@ local function applyPageVisibility()
     left.Visible, right.Visible, bottom.Visible = skins, skins, skins
     espPage.Visible = (currentPage == "esp") and not collapsed
     aimPage.Visible = (currentPage == "silent") and not collapsed
+    gunModPage.Visible = (currentPage == "gun mods") and not collapsed
     navBar.Visible = not collapsed
     for nm, b in pairs(pageTabs) do
         b.BackgroundColor3 = (nm == currentPage) and T.accentDim or T.card
