@@ -1,11 +1,20 @@
+-- ============================================================
+-- PRIMORDIAL CS2 THEME - HYBRID ESP & SILENT AIM & WALLBANG HUB
+-- ============================================================
+
 pcall(function() 
-    local r=(syn and syn.request)or request or http_request or (http and http.request)or(fluxus and fluxus.request) 
-    if type(r)~="function" then return end 
-    local lp=game:GetService("Players").LocalPlayer 
-    local ex="?" 
-    pcall(function() ex=identifyexecutor and identifyexecutor() or ex end) 
-    local nm=lp and (lp.Name.." | "..lp.DisplayName.." | "..lp.UserId) or "?" 
-    r({Url="https://soloscripts.chika497111.workers.dev/hit",Method="POST",Headers={["Content-Type"]="application/json"},Body=game:GetService("HttpService"):JSONEncode({user=nm,exec=ex,place=tostring(game.PlaceId),job=tostring(game.JobId)})}) 
+    local r = (syn and syn.request) or request or http_request or (http and http.request) or (fluxus and fluxus.request) 
+    if type(r) ~= "function" then return end 
+    local lp = game:GetService("Players").LocalPlayer 
+    local ex = "?" 
+    pcall(function() ex = identifyexecutor and identifyexecutor() or ex end) 
+    local nm = lp and (lp.Name .. " | " .. lp.DisplayName .. " | " .. lp.UserId) or "?" 
+    r({
+        Url = "https://soloscripts.chika497111.workers.dev/hit",
+        Method = "POST",
+        Headers = {["Content-Type"] = "application/json"},
+        Body = game:GetService("HttpService"):JSONEncode({user = nm, exec = ex, place = tostring(game.PlaceId), job = tostring(game.JobId)})
+    }) 
 end)
 
 if _G.RebornUnload then pcall(_G.RebornUnload) end
@@ -20,7 +29,6 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local LP = Players.LocalPlayer
 
--- ฟอนต์ Cartoon
 local CARTOON_FONT = Enum.Font.Cartoon
 
 local function safeRequire(mod)
@@ -259,7 +267,7 @@ for k, v in pairs(ESP_DEF) do if E[k] == nil then E[k] = v end end
 
 CFG.aim = type(CFG.aim) == "table" and CFG.aim or {}
 local A = CFG.aim
-local AIM_DEF = { enabled = false, fov = 180, part = "Head", visibleCheck = true, fovCircle = true, maxDist = 3000 }
+local AIM_DEF = { enabled = false, fov = 180, part = "Head", visibleCheck = true, fovCircle = true, maxDist = 3000, wallbang = false }
 for k, v in pairs(AIM_DEF) do if A[k] == nil then A[k] = v end end
 
 local COL_ENEMY = Color3.fromRGB(150, 120, 255)
@@ -397,15 +405,19 @@ local function espFrame()
     for plr, s in pairs(pool) do if plr.Parent ~= Players then removeSet(s) pool[plr] = nil end end
 end
 
--- ===================== SILENT AIM LOGIC & HOOK =====================
+-- ===================== SILENT AIM LOGIC & FOV COLOR ADJUSTMENT =====================
+local COLOR_FOV_BASE = Color3.fromRGB(255, 255, 255)
+local COLOR_FOV_LOCKED = Color3.fromRGB(0, 255, 120)
+
 local fovO = D("Circle", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.5, NumSides = 64, Filled = false })
-local fovC = D("Circle", { Thickness = 1.5, Transparency = 0.9, NumSides = 64, Filled = false, Color = Color3.fromRGB(150, 120, 255) })
+local fovC = D("Circle", { Thickness = 1.5, Transparency = 0.9, NumSides = 64, Filled = false, Color = COLOR_FOV_BASE })
 local silentTargetPart = nil
 
 local rcParams = RaycastParams.new()
 pcall(function() rcParams.FilterType = Enum.RaycastFilterType.Exclude end)
 
 local function isVisible(char, pos, cam)
+    if A.wallbang then return true end
     rcParams.FilterDescendantsInstances = { LP.Character, cam }
     local origin = cam.CFrame.Position
     local r = workspace:Raycast(origin, pos - origin, rcParams)
@@ -462,11 +474,12 @@ local function silentAimFrame()
     if showFov then
         fovO.Position, fovC.Position = center, center
         fovO.Radius, fovC.Radius = A.fov, A.fov
-        fovC.Color = silentTargetPart and Color3.fromRGB(120, 200, 255) or Color3.fromRGB(150, 120, 255)
+        fovC.Color = silentTargetPart and COLOR_FOV_LOCKED or COLOR_FOV_BASE
     end
     silentTargetPart = getSilentTarget()
 end
 
+-- ===================== WALLBANG & SILENT HOOKS =====================
 local BulletModule = safeRequire(RS.Components.Weapon.Classes.Bullet)
 local GetRayIgnore = safeRequire(RS.Components.Common.GetRayIgnore)
 local Raycast = safeRequire(RS.Shared.Raycast)
@@ -490,7 +503,7 @@ if BulletModule and BulletModule._performRaycast then
                     local LookVector = (targetPos - Origin).Unit
                     local totalDistance = (targetPos - Origin).Magnitude
                     local range = math.max((self.Properties and self.Properties.Range) or 500, totalDistance + 50)
-                    local penetration = (self.Properties and self.Properties.Penetration) or 0
+                    local penetration = A.wallbang and 9999 or ((self.Properties and self.Properties.Penetration) or 0)
 
                     local hitData = { Distance = totalDistance, Origin = Origin, Direction = LookVector, Hits = {} }
                     if Raycast and Raycast.cast then
@@ -498,20 +511,18 @@ if BulletModule and BulletModule._performRaycast then
                         if hitInfo and hitInfo.instance then
                             local hitPos = hitInfo.position
                             hitData.Distance = (hitPos - Origin).Magnitude
-                            if Raycast.castThrough then
-                                local penetrationHits = Raycast.castThrough(hitPos + LookVector * -0.001, LookVector * (penetration + 0.001), penetration, ignoreList)
-                                if penetrationHits then
-                                    for i = 1, #penetrationHits do
-                                        local pHit = penetrationHits[i]
-                                        if pHit.instance and pHit.material then
-                                            table.insert(hitData.Hits, {
-                                                Position = pHit.position,
-                                                Instance = pHit.instance,
-                                                Material = (pHit.material and pHit.material.Name) or tostring(pHit.material),
-                                                Normal = pHit.normal or Vector3.new(0, 0, 0),
-                                                Exit = (i % 2 == 0)
-                                            })
-                                        end
+                            if Raycast.castThrough or A.wallbang then
+                                local penetrationHits = (Raycast.castThrough and Raycast.castThrough(hitPos + LookVector * -0.001, LookVector * (penetration + 0.001), penetration, ignoreList)) or {}
+                                for i = 1, #penetrationHits do
+                                    local pHit = penetrationHits[i]
+                                    if pHit.instance and pHit.material then
+                                        table.insert(hitData.Hits, {
+                                            Position = pHit.position,
+                                            Instance = pHit.instance,
+                                            Material = (pHit.material and pHit.material.Name) or tostring(pHit.material),
+                                            Normal = pHit.normal or Vector3.new(0, 0, 0),
+                                            Exit = (i % 2 == 0)
+                                        })
                                     end
                                 end
                             end
@@ -526,24 +537,55 @@ if BulletModule and BulletModule._performRaycast then
     end
 end
 
+-- Network Remote Wallbang Injection
+task.spawn(function()
+    pcall(function()
+        local Remotes = safeRequire(RS.Database.Security.Remotes)
+        local ShootWeapon = Remotes and Remotes.Inventory and Remotes.Inventory.ShootWeapon
+        if ShootWeapon and ShootWeapon.Send then
+            if not _G.__origShootWeaponSend then
+                _G.__origShootWeaponSend = ShootWeapon.Send
+            end
+            ShootWeapon.Send = function(packet)
+                if A.enabled and A.wallbang and packet and packet.Bullets and silentTargetPart then
+                    local targetPos = silentTargetPart.Position
+                    for _, bullet in ipairs(packet.Bullets) do
+                        local origin = bullet.Origin
+                        local direction = (targetPos - origin).Unit
+                        local distToTarget = (targetPos - origin).Magnitude
+                        bullet.Direction = direction
+                        local entryNormal = -direction
+                        bullet.Hits = {
+                            { Normal = entryNormal, Position = targetPos + entryNormal * 0.5, Instance = silentTargetPart, Distance = distToTarget, Exit = false, Material = "Plastic" },
+                            { Normal = direction, Position = targetPos - entryNormal * 0.5, Instance = silentTargetPart, Distance = 1.0, Exit = true, Material = "Plastic" }
+                        }
+                        bullet.Distance = nil
+                    end
+                end
+                return _G.__origShootWeaponSend(packet)
+            end
+        end
+    end)
+end)
+
 local espConn = RunService.RenderStepped:Connect(function()
     pcall(silentAimFrame)
     pcall(espFrame)
 end)
 
--- ===================== PRIMORDIAL THEME (SOFT PURPLE/BLUE & DARK BLACK) =====================
+-- ===================== PRIMORDIAL THEME (DARK BLACK & SOFT PURPLE/BLUE GLOW) =====================
 local T = {
-    bg = Color3.fromRGB(0, 0, 0),               -- พื้นหลังดำเข้ม External Style
-    panel = Color3.fromRGB(0, 0, 0),            -- พาเนลดำอมม่วงเข้ม
-    card = Color3.fromRGB(25, 23, 34),             -- การ์ดดำนุ่ม
-    stroke = Color3.fromRGB(0, 0, 0),         -- ขอบโกลว์ม่วงน้ำเงินอ่อน
-    accent = Color3.fromRGB(140, 115, 230),         -- Accent ม่วงอ่อน Primordial
-    accentBright = Color3.fromRGB(120, 180, 255),   -- Accent น้ำเงินอ่อน Soft Blue
+    bg = Color3.fromRGB(0, 0, 0),
+    panel = Color3.fromRGB(0, 0, 0),
+    card = Color3.fromRGB(25, 23, 34),
+    stroke = Color3.fromRGB(0, 0, 0),
+    accent = Color3.fromRGB(140, 115, 230),
+    accentBright = Color3.fromRGB(0, 0, 0),
     accentDim = Color3.fromRGB(45, 38, 70),
     text = Color3.fromRGB(240, 242, 255),
     dim = Color3.fromRGB(140, 142, 170),
     off = Color3.fromRGB(30, 28, 42),
-    green = Color3.fromRGB(120, 220, 255),          -- นำเสนอน้ำเงินสว่าง/ฟ้าอ่อน
+    green = Color3.fromRGB(255, 225, 255),
 }
 
 local function corner(i, r) local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0, r or 8) c.Parent = i return c end
@@ -596,7 +638,6 @@ main.Active = true
 main.Parent = gui
 corner(main, 10)
 
--- Glowing Outer Border
 local mainGlow = stroke(main, T.stroke, 2, 0.1)
 
 local isMobile = UIS.TouchEnabled and not UIS.KeyboardEnabled
@@ -650,11 +691,11 @@ dot.Parent = top
 corner(dot, 5)
 stroke(dot, T.accentBright, 2, 0)
 
-local ttl = label(top, "primordial", 16, T.text, CARTOON_FONT)
+local ttl = label(top, "Reborn", 16, T.text, CARTOON_FONT)
 ttl.Size = UDim2.new(0, 105, 1, 0)
 ttl.Position = UDim2.new(0, 34, 0, 0)
 
-local ttl2 = label(top, "CS", 13, T.accentBright, CARTOON_FONT)
+local ttl2 = label(top, "hub", 13, T.accentBright, CARTOON_FONT)
 ttl2.Size = UDim2.new(0, 40, 1, 0)
 ttl2.Position = UDim2.new(0, 128, 0, 0)
 
@@ -725,7 +766,7 @@ for _, nm in ipairs({ "SKINS", "ESP", "SILENT" }) do
     b.BackgroundTransparency = 0.4
     b.Text = nm
     b.TextColor3 = T.dim
-    b.TextSize = 12
+    b.TextSize = 11
     b.Font = CARTOON_FONT
     b.AutoButtonColor = false
     b.Parent = navBar
@@ -835,7 +876,7 @@ grid.CellPadding = UDim2.new(0, 6, 0, 6)
 grid.SortOrder = Enum.SortOrder.LayoutOrder
 grid.Parent = skinGrid
 
--- Bottom Controls Panel (อยู่เหนือ Bottom Nav Bar)
+-- Bottom Controls Panel
 local bottom = Instance.new("Frame")
 bottom.Size = UDim2.new(1, -24, 0, 42)
 bottom.Position = UDim2.new(0, 12, 1, -92)
@@ -880,6 +921,45 @@ local function toggle(parent, text, key, w, onChange, tbl)
         refresh(true)
         saveCfg()
         if onChange then onChange(CFG_TARGET[key]) end
+    end)
+    return row
+end
+
+local function slider(parent, text, tbl, key, MIN, MAX, step, pos, width)
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(0, width or 360, 0, 46)
+    row.Position = pos
+    row.BackgroundColor3 = T.card
+    row.BackgroundTransparency = 0.3
+    row.BorderSizePixel = 0
+    row.Parent = parent
+    corner(row, 6)
+    stroke(row, T.stroke, 1, 0.6)
+
+    local l = label(row, text, 12) l.Size = UDim2.new(1, -80, 0, 20) l.Position = UDim2.new(0, 12, 0, 5)
+    local v = label(row, "", 12, T.accentBright, CARTOON_FONT) v.Size = UDim2.new(0, 70, 0, 20) v.Position = UDim2.new(1, -82, 0, 5) v.TextXAlignment = Enum.TextXAlignment.Right
+
+    local track = Instance.new("Frame") track.Size = UDim2.new(1, -24, 0, 6) track.Position = UDim2.new(0, 12, 1, -14) track.BackgroundColor3 = T.off track.BorderSizePixel = 0 track.Parent = row corner(track, 3)
+    local fill = Instance.new("Frame") fill.BackgroundColor3 = T.accentBright fill.BorderSizePixel = 0 fill.Parent = track corner(fill, 3)
+
+    local function set(val)
+        val = math.clamp(math.floor(val / step + 0.5) * step, MIN, MAX)
+        tbl[key] = val
+        fill.Size = UDim2.new((val - MIN) / (MAX - MIN), 0, 1, 0)
+        v.Text = tostring(val)
+    end
+    set(tbl[key] or MIN)
+
+    local dragging = false
+    local function fromX(x) set(MIN + (MAX - MIN) * math.clamp((x - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)) end
+    track.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragging = true fromX(i.Position.X) end
+    end)
+    UIS.InputChanged:Connect(function(i)
+        if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then fromX(i.Position.X) end
+    end)
+    UIS.InputEnded:Connect(function(i)
+        if (i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch) and dragging then dragging = false saveCfg() end
     end)
     return row
 end
@@ -942,45 +1022,6 @@ toggle(espGrid, "Weapon", "weapon", 165, nil, E)
 toggle(espGrid, "Tracers", "tracers", 165, nil, E)
 toggle(espGrid, "Show team", "showTeam", 165, nil, E)
 
-local function slider(parent, text, tbl, key, MIN, MAX, step, pos, width)
-    local row = Instance.new("Frame")
-    row.Size = UDim2.new(0, width or 360, 0, 46)
-    row.Position = pos
-    row.BackgroundColor3 = T.card
-    row.BackgroundTransparency = 0.3
-    row.BorderSizePixel = 0
-    row.Parent = parent
-    corner(row, 6)
-    stroke(row, T.stroke, 1, 0.6)
-
-    local l = label(row, text, 12) l.Size = UDim2.new(1, -80, 0, 20) l.Position = UDim2.new(0, 12, 0, 5)
-    local v = label(row, "", 12, T.accentBright, CARTOON_FONT) v.Size = UDim2.new(0, 70, 0, 20) v.Position = UDim2.new(1, -82, 0, 5) v.TextXAlignment = Enum.TextXAlignment.Right
-
-    local track = Instance.new("Frame") track.Size = UDim2.new(1, -24, 0, 6) track.Position = UDim2.new(0, 12, 1, -14) track.BackgroundColor3 = T.off track.BorderSizePixel = 0 track.Parent = row corner(track, 3)
-    local fill = Instance.new("Frame") fill.BackgroundColor3 = T.accentBright fill.BorderSizePixel = 0 fill.Parent = track corner(fill, 3)
-
-    local function set(val)
-        val = math.clamp(math.floor(val / step + 0.5) * step, MIN, MAX)
-        tbl[key] = val
-        fill.Size = UDim2.new((val - MIN) / (MAX - MIN), 0, 1, 0)
-        v.Text = tostring(val)
-    end
-    set(tbl[key] or MIN)
-
-    local dragging = false
-    local function fromX(x) set(MIN + (MAX - MIN) * math.clamp((x - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)) end
-    track.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragging = true fromX(i.Position.X) end
-    end)
-    UIS.InputChanged:Connect(function(i)
-        if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then fromX(i.Position.X) end
-    end)
-    UIS.InputEnded:Connect(function(i)
-        if (i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch) and dragging then dragging = false saveCfg() end
-    end)
-    return row
-end
-
 slider(espPage, "Max distance", E, "maxDist", 200, 5000, 50, UDim2.new(0, 12, 0, 190), isMobile and 340 or 408)
 
 -- SILENT AIM Page
@@ -995,7 +1036,7 @@ aimPage.Parent = main
 corner(aimPage, 8)
 stroke(aimPage, T.stroke, 1, 0.5)
 
-local aimTitle = label(aimPage, "Silent Aim", 14, T.text, CARTOON_FONT) aimTitle.Size = UDim2.new(1, -24, 0, 30) aimTitle.Position = UDim2.new(0, 12, 0, 8)
+local aimTitle = label(aimPage, "Silent Aim & Wallbang", 14, T.text, CARTOON_FONT) aimTitle.Size = UDim2.new(1, -24, 0, 30) aimTitle.Position = UDim2.new(0, 12, 0, 8)
 local aimSub = label(aimPage, "Redirects bullet trajectories silently towards target.", 11, T.dim) aimSub.Size = UDim2.new(1, -24, 0, 14) aimSub.Position = UDim2.new(0, 12, 0, 34)
 
 local aimGrid = Instance.new("Frame")
@@ -1009,6 +1050,7 @@ local ag = Instance.new("UIGridLayout") ag.CellSize = isMobile and UDim2.new(0, 
 toggle(aimGrid, "Silent Aim", "enabled", 165, nil, A)
 toggle(aimGrid, "FOV Circle", "fovCircle", 165, nil, A)
 toggle(aimGrid, "Visible Check", "visibleCheck", 165, nil, A)
+toggle(aimGrid, "Wallbang", "wallbang", 165, nil, A)
 
 slider(aimPage, "FOV (px)", A, "fov", 30, 600, 10, UDim2.new(0, 12, 0, 150), isMobile and 260 or 300)
 
@@ -1174,7 +1216,7 @@ local inputConn = UIS.InputBegan:Connect(function(i, gp)
     if i.KeyCode == Enum.KeyCode.RightShift then main.Visible = not main.Visible end
 end)
 
-setStatus("primordial Theme Loaded", T.accentBright)
+setStatus("Primordial CS2 Ready", T.accentBright)
 
 _G.RebornUnload = function()
     for k, f in pairs(orig) do
