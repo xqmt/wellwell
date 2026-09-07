@@ -691,11 +691,11 @@ dot.Parent = top
 corner(dot, 5)
 stroke(dot, T.accentBright, 2, 0)
 
-local ttl = label(top, "primordial", 16, T.text, CARTOON_FONT)
+local ttl = label(top, "welles", 16, T.text, CARTOON_FONT)
 ttl.Size = UDim2.new(0, 105, 1, 0)
 ttl.Position = UDim2.new(0, 34, 0, 0)
 
-local ttl2 = label(top, "CS", 13, T.accentBright, CARTOON_FONT)
+local ttl2 = label(top, "lol", 13, T.accentBright, CARTOON_FONT)
 ttl2.Size = UDim2.new(0, 40, 1, 0)
 ttl2.Position = UDim2.new(0, 128, 0, 0)
 
