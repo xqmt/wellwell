@@ -580,12 +580,12 @@ local T = {
     card = Color3.fromRGB(25, 23, 34),
     stroke = Color3.fromRGB(0, 0, 0),
     accent = Color3.fromRGB(140, 115, 230),
-    accentBright = Color3.fromRGB(0, 0, 0),
+    accentBright = Color3.fromRGB(120, 180, 255),
     accentDim = Color3.fromRGB(45, 38, 70),
     text = Color3.fromRGB(240, 242, 255),
     dim = Color3.fromRGB(140, 142, 170),
     off = Color3.fromRGB(30, 28, 42),
-    green = Color3.fromRGB(255, 225, 255),
+    green = Color3.fromRGB(120, 220, 255),
 }
 
 local function corner(i, r) local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0, r or 8) c.Parent = i return c end
@@ -691,11 +691,11 @@ dot.Parent = top
 corner(dot, 5)
 stroke(dot, T.accentBright, 2, 0)
 
-local ttl = label(top, "Reborn", 16, T.text, CARTOON_FONT)
+local ttl = label(top, "primordial", 16, T.text, CARTOON_FONT)
 ttl.Size = UDim2.new(0, 105, 1, 0)
 ttl.Position = UDim2.new(0, 34, 0, 0)
 
-local ttl2 = label(top, "hub", 13, T.accentBright, CARTOON_FONT)
+local ttl2 = label(top, "CS", 13, T.accentBright, CARTOON_FONT)
 ttl2.Size = UDim2.new(0, 40, 1, 0)
 ttl2.Position = UDim2.new(0, 128, 0, 0)
 
