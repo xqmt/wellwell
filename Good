@@ -873,11 +873,11 @@ navLayout.Parent = navBar
 local pageTabs, currentPage = {}, "skins"
 local setPage
 
-for _, nm in ipairs({ "SKINS", "ESP", "SILENT", "GUN MODS" }) do
+for _, nm in ipairs({ "SKINS", "ESP", "Combat", "GUN MODS" }) do
     local b = Instance.new("TextButton")
     b.Size = UDim2.new(0.23, 0, 0, 26)
     b.BackgroundColor3 = T.card
-    b.BackgroundTransparency = 0
+    b.BackgroundTransparency = 0.4
     b.Text = nm
     b.TextColor3 = T.dim
     b.TextSize = 11
@@ -895,7 +895,7 @@ local left = Instance.new("Frame")
 left.Size = isMobile and UDim2.new(0, 190, 1, -154) or UDim2.new(0, 230, 1, -154)
 left.Position = UDim2.new(0, 12, 0, 56)
 left.BackgroundColor3 = T.panel
-left.BackgroundTransparency = 0
+left.BackgroundTransparency = 0.2
 left.BorderSizePixel = 0
 left.Parent = main
 corner(left, 8)
@@ -905,7 +905,7 @@ local search = Instance.new("TextBox")
 search.Size = UDim2.new(1, -16, 0, 30)
 search.Position = UDim2.new(0, 8, 0, 8)
 search.BackgroundColor3 = T.card
-search.BackgroundTransparency = 0
+search.BackgroundTransparency = 0.3
 search.PlaceholderText = "Search weapons..."
 search.PlaceholderColor3 = T.dim
 search.Text = ""
@@ -951,7 +951,7 @@ local right = Instance.new("Frame")
 right.Size = isMobile and UDim2.new(1, -218, 1, -154) or UDim2.new(1, -266, 1, -154)
 right.Position = isMobile and UDim2.new(0, 206, 0, 56) or UDim2.new(0, 254, 0, 56)
 right.BackgroundColor3 = T.panel
-right.BackgroundTransparency = 0
+right.BackgroundTransparency = 0.2
 right.BorderSizePixel = 0
 right.Parent = main
 corner(right, 8)
@@ -964,7 +964,7 @@ local resetBtn = Instance.new("TextButton")
 resetBtn.Size = UDim2.new(0, 80, 0, 26)
 resetBtn.Position = UDim2.new(1, -90, 0, 12)
 resetBtn.BackgroundColor3 = T.card
-resetBtn.BackgroundTransparency = 0
+resetBtn.BackgroundTransparency = 0.3
 resetBtn.Text = "Reset"
 resetBtn.TextColor3 = T.dim
 resetBtn.TextSize = 12
@@ -995,7 +995,7 @@ local bottom = Instance.new("Frame")
 bottom.Size = UDim2.new(1, -24, 0, 42)
 bottom.Position = UDim2.new(0, 12, 1, -92)
 bottom.BackgroundColor3 = T.panel
-bottom.BackgroundTransparency = 0
+bottom.BackgroundTransparency = 0.2
 bottom.BorderSizePixel = 0
 bottom.Parent = main
 corner(bottom, 8)
@@ -1009,7 +1009,7 @@ local function toggle(parent, text, key, w, onChange, tbl)
     local row = Instance.new("TextButton")
     row.Size = UDim2.new(0, w or 120, 0, 30)
     row.BackgroundColor3 = T.card
-    row.BackgroundTransparency = 0
+    row.BackgroundTransparency = 0.3
     row.Text = ""
     row.AutoButtonColor = false
     row.Parent = parent
@@ -1044,7 +1044,7 @@ local function slider(parent, text, tbl, key, MIN, MAX, step, pos, width)
     row.Size = UDim2.new(0, width or 360, 0, 46)
     row.Position = pos
     row.BackgroundColor3 = T.card
-    row.BackgroundTransparency = 0
+    row.BackgroundTransparency = 0.3
     row.BorderSizePixel = 0
     row.Parent = parent
     corner(row, 6)
@@ -1361,7 +1361,7 @@ local inputConn = UIS.InputBegan:Connect(function(i, gp)
     if i.KeyCode == Enum.KeyCode.RightShift then main.Visible = not main.Visible end
 end)
 
-setStatus("Primordial CS2 Ready", T.accentBright)
+setStatus("Ready", T.accentBright)
 
 _G.RebornUnload = function()
     for k, f in pairs(orig) do
