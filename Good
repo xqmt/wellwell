@@ -406,7 +406,7 @@ local function espFrame()
 end
 
 -- ===================== SILENT AIM LOGIC & FOV COLOR ADJUSTMENT =====================
-local COLOR_FOV_BASE = Color3.fromRGB(255, 255, 255)
+local COLOR_FOV_BASE = Color3.fromRGB(120, 180, 255)
 local COLOR_FOV_LOCKED = Color3.fromRGB(0, 255, 120)
 
 local fovO = D("Circle", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.5, NumSides = 64, Filled = false })
