@@ -1,5 +1,5 @@
 -- ============================================================
--- REBORN CS2 THEME - PURE BLACK EDITION (RGB 0, 0, 0)
+-- REBORN CS2 THEME - SOFT PASTEL (LIGHT BLUE / PURPLE EDITION)
 -- ============================================================
 
 pcall(function() 
@@ -307,8 +307,8 @@ local G = CFG.gunmod
 local GUNMOD_DEF = { firerate = false, firerateValue = 0.05, noRecoil = false, noSpread = false, autoFire = false, customRpm = false, rpmValue = 800 }
 for k, v in pairs(GUNMOD_DEF) do if G[k] == nil then G[k] = v end end
 
-local COL_ENEMY = Color3.fromRGB(255, 100, 100)
-local COL_TEAM = Color3.fromRGB(0, 255, 100)
+local COL_ENEMY = Color3.fromRGB(180, 160, 255)
+local COL_TEAM = Color3.fromRGB(135, 206, 250)
 local BONES = { 
     { "Head", "UpperTorso" }, { "UpperTorso", "LowerTorso" }, { "UpperTorso", "LeftUpperArm" }, 
     { "LeftUpperArm", "LeftLowerArm" }, { "LeftLowerArm", "LeftHand" }, { "UpperTorso", "RightUpperArm" }, 
@@ -448,7 +448,7 @@ local function espFrame()
                     local ratio = math.clamp((hp or maxHp) / math.max(maxHp, 1), 0, 1)
                     s.hpBg.Position = Vector2.new(x1 - 6, y1 - 1) s.hpBg.Size = Vector2.new(4, h + 2)
                     s.hp.Position = Vector2.new(x1 - 5, y1 + h * (1 - ratio)) s.hp.Size = Vector2.new(2, h * ratio)
-                    s.hp.Color = Color3.fromRGB(255, 50, 50):Lerp(Color3.fromRGB(0, 255, 0), ratio)
+                    s.hp.Color = Color3.fromRGB(180, 160, 255):Lerp(Color3.fromRGB(135, 206, 250), ratio)
                 end
                 
                 s.tracer.Visible = E.tracers
@@ -489,8 +489,8 @@ local function espFrame()
 end
 
 -- ===================== SILENT AIM LOGIC & FOV COLOR ADJUSTMENT =====================
-local COLOR_FOV_BASE = Color3.fromRGB(255, 100, 100)
-local COLOR_FOV_LOCKED = Color3.fromRGB(0, 255, 255)
+local COLOR_FOV_BASE = Color3.fromRGB(180, 160, 255)
+local COLOR_FOV_LOCKED = Color3.fromRGB(0, 255, 100)
 
 local fovO = D("Circle", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.5, NumSides = 64, Filled = false })
 local fovC = D("Circle", { Thickness = 1.5, Transparency = 0.9, NumSides = 64, Filled = false, Color = COLOR_FOV_BASE })
@@ -979,19 +979,19 @@ local espConn = RunService.RenderStepped:Connect(function()
     pcall(espFrame)
 end)
 
--- ===================== PURE BLACK THEME (RGB 0, 0, 0) =====================
+-- ===================== LIGHT BLUE & PURPLE THEME =====================
 local T = {
-    bg = Color3.fromRGB(0, 0, 0),                 -- ดำบริสุทธิ์ 100%
-    panel = Color3.fromRGB(0, 0, 0),              -- ดำบริสุทธิ์ 100%
-    card = Color3.fromRGB(0, 0, 0),               -- ดำบริสุทธิ์ 100%
-    stroke = Color3.fromRGB(180, 20, 20),         -- ขอบสีแดงเพื่อความชัดเจน
-    accent = Color3.fromRGB(230, 35, 35),         -- สีแดงสด Accent
-    accentBright = Color3.fromRGB(255, 80, 80),   -- แดงสว่าง
-    accentDim = Color3.fromRGB(100, 0, 0),        -- แดงเข้มสำหรับปุ่มที่เลือก
-    text = Color3.fromRGB(255, 255, 255),         -- สีข้อความขาว
-    dim = Color3.fromRGB(200, 200, 200),          -- ข้อความขาวอมเทาสว่าง
-    off = Color3.fromRGB(0, 0, 0),                -- ปุ่มปิด ดำบริสุทธิ์ 100%
-    green = Color3.fromRGB(255, 45, 45),          -- สถานะเปิดสีแดง
+    bg = Color3.fromRGB(0, 0, 0),               -- Dark Midnight Blue
+    panel = Color3.fromRGB(0, 0, 0),            -- Deep Purple-Blue
+    card = Color3.fromRGB(0, 0, 0),             -- Dark Card Background
+    stroke = Color3.fromRGB(0, 0, 0),        -- Soft Purple Border
+    accent = Color3.fromRGB(135, 206, 250),        -- Light Sky Blue
+    accentBright = Color3.fromRGB(180, 160, 255),  -- Bright Pastel Purple
+    accentDim = Color3.fromRGB(0, 0, 0),        -- Muted Purple
+    text = Color3.fromRGB(240, 240, 255),          -- Crisp Light Blue-White
+    dim = Color3.fromRGB(150, 150, 190),           -- Soft Grey-Purple
+    off = Color3.fromRGB(35, 35, 55),              -- Toggle Off Dark State
+    green = Color3.fromRGB(135, 206, 250),         -- Light Blue Active Accent
 }
 
 -- Gradient Provider & Animation Manager
@@ -1000,9 +1000,9 @@ local animatedGradients = {}
 local function applyGradient3Color(parent)
     local grad = Instance.new("UIGradient")
     grad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 35, 35)),  
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(140, 10, 10)),  
-        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 120, 120)) 
+        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(135, 206, 250)), -- Light Blue
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180, 160, 255)), -- Pastel Purple
+        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(200, 220, 255))  -- Soft Lavender Blue
     })
     grad.Rotation = 0
     grad.Parent = parent
@@ -1083,8 +1083,8 @@ gui.Parent = hui
 
 -- Main GUI Window
 local main = Instance.new("Frame")
-main.Size = UDim2.new(0, 520, 0, 360)
-main.Position = UDim2.new(0.5, -260, 0.5, -180)
+main.Size = UDim2.new(0, 620, 0, 420)
+main.Position = UDim2.new(0.5, -310, 0.5, -210)
 main.BackgroundColor3 = T.bg
 main.BackgroundTransparency = 0
 main.BorderSizePixel = 0
@@ -1097,8 +1097,8 @@ applyGradient3Color(mainGlow)
 
 local isMobile = UIS.TouchEnabled and not UIS.KeyboardEnabled
 if isMobile then
-    main.Size = UDim2.new(0, 480, 0, 320)
-    main.Position = UDim2.new(0.5, -240, 0.5, -160)
+    main.Size = UDim2.new(0, 540, 0, 360)
+    main.Position = UDim2.new(0.5, -270, 0.5, -180)
 end
 
 -- Mobile Toggle Button
@@ -1154,7 +1154,7 @@ local ttl = label(top, "welles", 14, T.text, MAIN_FONT)
 ttl.Size = UDim2.new(0, 80, 1, 0)
 ttl.Position = UDim2.new(0, 26, 0, 0)
 
-local ttl2 = label(top, "lol", 12, T.accent, MAIN_FONT)
+local ttl2 = label(top, "lol", 12, T.accentBright, MAIN_FONT)
 ttl2.Size = UDim2.new(0, 30, 1, 0)
 ttl2.Position = UDim2.new(0, 95, 0, 0)
 
@@ -1802,7 +1802,7 @@ end
 search:GetPropertyChangedSignal("Text"):Connect(buildWeapons)
 buildWeapons()
 
-local FULL_H, BAR_H = isMobile and 320 or 360, 38
+local FULL_H, BAR_H = isMobile and 360 or 420, 38
 local collapsed = false
 
 local function applyPageVisibility()
@@ -1829,7 +1829,7 @@ local function setCollapsed(c)
     applyPageVisibility()
     topFix.Visible = not c
     closeBtn.Text = c and "+" or "–"
-    tween(main, { Size = UDim2.new(0, isMobile and 480 or 520, 0, c and BAR_H or FULL_H) }, 0.2)
+    tween(main, { Size = UDim2.new(0, isMobile and 540 or 620, 0, c and BAR_H or FULL_H) }, 0.2)
 end
 
 applyPageVisibility()
