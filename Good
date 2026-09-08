@@ -873,7 +873,7 @@ navLayout.Parent = navBar
 local pageTabs, currentPage = {}, "skins"
 local setPage
 
-for _, nm in ipairs({ "SKINS", "ESP", "Combat", "GUN MODS" }) do
+for _, nm in ipairs({ "SKINS", "ESP", "Silent", "GUN MODS" }) do
     local b = Instance.new("TextButton")
     b.Size = UDim2.new(0.23, 0, 0, 26)
     b.BackgroundColor3 = T.card
