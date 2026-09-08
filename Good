@@ -125,8 +125,8 @@ end
 local function isKnife(name) return classOf(name) == "Knives" end
 local function isGlove(name) return classOf(name) == "Gloves" end
 
-local WeaponsFolder = RS.Assets:FindFirstChild("Weapons")
-local function weaponExists(name) return type(name) == "string" and WeaponsFolder ~= nil and WeaponsFolder:FindFirstChild(name) ~= nil end
+local WeaponsFolderAssets = RS.Assets:FindFirstChild("Weapons")
+local function weaponExists(name) return type(name) == "string" and WeaponsFolderAssets ~= nil and WeaponsFolderAssets:FindFirstChild(name) ~= nil end
 
 local function skinsFor(weapon)
     local ok, list = pcall(SkinsLib.GetAllSkinsForWeapon, weapon)
@@ -273,7 +273,7 @@ for k, v in pairs(AIM_DEF) do if A[k] == nil then A[k] = v end end
 -- ===================== GUN MODS CONFIG =====================
 CFG.gunmod = type(CFG.gunmod) == "table" and CFG.gunmod or {}
 local G = CFG.gunmod
-local GUNMOD_DEF = { firerate = false, firerateValue = 0.05, noRecoil = false, noSpread = false, autoFire = false }
+local GUNMOD_DEF = { firerate = false, firerateValue = 0.05, noRecoil = false, noSpread = false, autoFire = false, customRpm = false, rpmValue = 800 }
 for k, v in pairs(GUNMOD_DEF) do if G[k] == nil then G[k] = v end end
 
 local COL_ENEMY = Color3.fromRGB(150, 120, 255)
@@ -574,111 +574,303 @@ task.spawn(function()
     end)
 end)
 
--- ===================== GUN MODS LOGIC & HOOKS =====================
-local originalFirerate = {}
-local firerateobjs = {}
+-- ===================== WEAPON ENGINE (FULL AUTO & CUSTOM RPM) =====================
+local WeaponsFolderDb = RS:WaitForChild('Database'):WaitForChild('Custom'):WaitForChild('Weapons')
 
+local WeaponMod = nil
+pcall(function()
+    WeaponMod = require(RS:WaitForChild('Components'):WaitForChild('Weapon'))
+end)
+
+local InventoryController = nil
+pcall(function()
+    InventoryController = require(RS:WaitForChild('Controllers'):WaitForChild('InventoryController'))
+end)
+
+local WeaponEngine = {
+    Initialized = false,
+    LoopActive = false,
+    Connections = {},
+    _originalConfigs = {}
+}
+
+local function cloneTable(t)
+    if type(t) ~= 'table' then return t end
+    local copy = {}
+    for k, v in pairs(t) do
+        if type(v) == 'table' then
+            copy[k] = cloneTable(v)
+        else
+            copy[k] = v
+        end
+    end
+    return copy
+end
+
+local function patchDatabaseConfig(cfg, name)
+    if not cfg or type(cfg) ~= 'table' then return end
+    if isreadonly(cfg) then setreadonly(cfg, false) end
+
+    local orig = WeaponEngine._originalConfigs[name] or {}
+
+    if G.customRpm and G.rpmValue and G.rpmValue > 0 then
+        cfg.FireRate = 60 / G.rpmValue
+    elseif G.firerate and G.firerateValue then
+        cfg.FireRate = G.firerateValue
+    elseif orig.FireRate ~= nil then
+        cfg.FireRate = orig.FireRate
+    end
+
+    if G.autoFire then
+        cfg.Automatic = true
+    elseif orig.Automatic ~= nil then
+        cfg.Automatic = orig.Automatic
+    end
+
+    if type(cfg.FireModes) == 'table' then
+        if isreadonly(cfg.FireModes) then setreadonly(cfg.FireModes, false) end
+        if type(cfg.FireModes.Primary) == 'table' then
+            if isreadonly(cfg.FireModes.Primary) then setreadonly(cfg.FireModes.Primary, false) end
+            if G.customRpm and G.rpmValue and G.rpmValue > 0 then
+                cfg.FireModes.Primary.FireRate = 60 / G.rpmValue
+            elseif G.firerate and G.firerateValue then
+                cfg.FireModes.Primary.FireRate = G.firerateValue
+            elseif orig.FireModes and orig.FireModes.Primary and orig.FireModes.Primary.FireRate ~= nil then
+                cfg.FireModes.Primary.FireRate = orig.FireModes.Primary.FireRate
+            end
+            if G.autoFire then
+                cfg.FireModes.Primary.HoldRepeat = true
+            elseif orig.FireModes and orig.FireModes.Primary and orig.FireModes.Primary.HoldRepeat ~= nil then
+                cfg.FireModes.Primary.HoldRepeat = orig.FireModes.Primary.HoldRepeat
+            end
+            table.freeze(cfg.FireModes.Primary)
+        end
+        if type(cfg.FireModes.Secondary) == 'table' then
+            if isreadonly(cfg.FireModes.Secondary) then setreadonly(cfg.FireModes.Secondary, false) end
+            if G.customRpm and G.rpmValue and G.rpmValue > 0 then
+                cfg.FireModes.Secondary.FireRate = 60 / G.rpmValue
+            elseif G.firerate and G.firerateValue then
+                cfg.FireModes.Secondary.FireRate = G.firerateValue
+            elseif orig.FireModes and orig.FireModes.Secondary and orig.FireModes.Secondary.FireRate ~= nil then
+                cfg.FireModes.Secondary.FireRate = orig.FireModes.Secondary.FireRate
+            end
+            if G.autoFire then
+                cfg.FireModes.Secondary.HoldRepeat = true
+            elseif orig.FireModes and orig.FireModes.Secondary and orig.FireModes.Secondary.HoldRepeat ~= nil then
+                cfg.FireModes.Secondary.HoldRepeat = orig.FireModes.Secondary.HoldRepeat
+            end
+            table.freeze(cfg.FireModes.Secondary)
+        end
+        table.freeze(cfg.FireModes)
+    end
+
+    table.freeze(cfg)
+end
+
+local function patchLiveItem(item)
+    if not item or type(item) ~= 'table' then return end
+
+    local props = item.Properties
+    if props and type(props) == 'table' then
+        if isreadonly(props) then setreadonly(props, false) end
+
+        local orig = WeaponEngine._originalConfigs[item.Name] or {}
+
+        if G.customRpm and G.rpmValue and G.rpmValue > 0 then
+            props.FireRate = 60 / G.rpmValue
+        elseif G.firerate and G.firerateValue then
+            props.FireRate = G.firerateValue
+        elseif orig.FireRate ~= nil then
+            props.FireRate = orig.FireRate
+        end
+
+        if G.autoFire then
+            props.Automatic = true
+        elseif orig.Automatic ~= nil then
+            props.Automatic = orig.Automatic
+        end
+
+        if type(props.FireModes) == 'table' then
+            if isreadonly(props.FireModes) then setreadonly(props.FireModes, false) end
+            if type(props.FireModes.Primary) == 'table' then
+                if isreadonly(props.FireModes.Primary) then setreadonly(props.FireModes.Primary, false) end
+                if G.customRpm and G.rpmValue and G.rpmValue > 0 then
+                    props.FireModes.Primary.FireRate = 60 / G.rpmValue
+                elseif G.firerate and G.firerateValue then
+                    props.FireModes.Primary.FireRate = G.firerateValue
+                end
+                if G.autoFire then
+                    props.FireModes.Primary.HoldRepeat = true
+                end
+                table.freeze(props.FireModes.Primary)
+            end
+            if type(props.FireModes.Secondary) == 'table' then
+                if isreadonly(props.FireModes.Secondary) then setreadonly(props.FireModes.Secondary, false) end
+                if G.customRpm and G.rpmValue and G.rpmValue > 0 then
+                    props.FireModes.Secondary.FireRate = 60 / G.rpmValue
+                elseif G.firerate and G.firerateValue then
+                    props.FireModes.Secondary.FireRate = G.firerateValue
+                end
+                if G.autoFire then
+                    props.FireModes.Secondary.HoldRepeat = true
+                end
+                table.freeze(props.FireModes.Secondary)
+            end
+            table.freeze(props.FireModes)
+        end
+
+        table.freeze(props)
+    end
+end
+
+function WeaponEngine.sync()
+    for _, mod in ipairs(WeaponsFolderDb:GetChildren()) do
+        if mod:IsA('ModuleScript') then
+            local ok, cfg = pcall(require, mod)
+            if ok and type(cfg) == 'table' then
+                patchDatabaseConfig(cfg, mod.Name)
+            end
+        end
+    end
+
+    if WeaponMod and WeaponMod.shoot and getupvalues then
+        local ok, upvals = pcall(getupvalues, WeaponMod.shoot)
+        if ok and type(upvals) == 'table' and type(upvals[5]) == 'table' then
+            for name, w in pairs(upvals[5]) do
+                if type(w) == 'table' then
+                    patchDatabaseConfig(w, name)
+                end
+            end
+        end
+    end
+
+    if InventoryController and debug.getupvalues then
+        local ok, ups = pcall(debug.getupvalues, InventoryController.getCurrentInventory)
+        if ok and ups and ups[1] then
+            local loadout = ups[1]
+            if loadout.CurrentEquipped then
+                patchLiveItem(loadout.CurrentEquipped)
+            end
+            if loadout.Inventory then
+                for _, slotData in pairs(loadout.Inventory) do
+                    if slotData._items then
+                        for _, item in ipairs(slotData._items) do
+                            patchLiveItem(item)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+function WeaponEngine.init()
+    if WeaponEngine.Initialized then return end
+    WeaponEngine.Initialized = true
+
+    for _, mod in ipairs(WeaponsFolderDb:GetChildren()) do
+        if mod:IsA('ModuleScript') then
+            local ok, cfg = pcall(require, mod)
+            if ok and type(cfg) == 'table' and not WeaponEngine._originalConfigs[mod.Name] then
+                WeaponEngine._originalConfigs[mod.Name] = cloneTable(cfg)
+            end
+        end
+    end
+
+    if InventoryController and InventoryController.OnInventoryItemEquipped then
+        local conn = InventoryController.OnInventoryItemEquipped:Connect(function(slot, item)
+            if type(item) == 'table' then
+                patchLiveItem(item)
+            end
+            pcall(WeaponEngine.sync)
+        end)
+        table.insert(WeaponEngine.Connections, conn)
+    end
+
+    WeaponEngine.LoopActive = true
+    task.spawn(function()
+        while WeaponEngine.LoopActive do
+            pcall(WeaponEngine.sync)
+            task.wait(0.35)
+        end
+    end)
+
+    WeaponEngine.sync()
+end
+
+function WeaponEngine.cleanup()
+    WeaponEngine.LoopActive = false
+    for _, conn in ipairs(WeaponEngine.Connections) do
+        pcall(function() conn:Disconnect() end)
+    end
+    WeaponEngine.Connections = {}
+
+    for name, orig in pairs(WeaponEngine._originalConfigs) do
+        local mod = WeaponsFolderDb:FindFirstChild(name)
+        if mod and mod:IsA('ModuleScript') then
+            local ok, cfg = pcall(require, mod)
+            if ok and type(cfg) == 'table' then
+                if isreadonly(cfg) then setreadonly(cfg, false) end
+                for k, v in pairs(orig) do
+                    if type(v) == 'table' then
+                        cfg[k] = cloneTable(v)
+                    else
+                        cfg[k] = v
+                    end
+                end
+                table.freeze(cfg)
+            end
+        end
+    end
+
+    WeaponEngine.Initialized = false
+end
+
+-- Initialize Engine
+WeaponEngine.init()
+
+-- ===================== GUN MODS RECOIL & SPREAD HOOKS =====================
 pcall(function()
     for _, obj in next, getgc(true) do  
-        -- Rapid Fire (FireRate)
-        if type(obj) == "table" and rawget(obj, "FireRate") then
-            pcall(function()
-                table.insert(originalFirerate, table.clone(obj))
-                table.insert(firerateobjs, obj)
-            end)
-        end
-
-        -- Auto Fire (Auto / FireMode)
-        if type(obj) == "table" and (rawget(obj, "Auto") ~= nil or rawget(obj, "FireMode") ~= nil) then
-            pcall(function()
-                local oldIndex
-                oldIndex = hookmetatable(obj, "__index", function(t, k)
-                    if G.autoFire and (k == "Auto" or k == "FireMode") then
-                        return true
-                    end
-                    return oldIndex(t, k)
-                end)
-            end)
-        end
-
-        -- No Recoil (setWeaponRecoil)
         if type(obj) == "table" and rawget(obj, "setWeaponRecoil") then
             pcall(function()
                 local oldSetWeaponRecoil
                 oldSetWeaponRecoil = hookfunction(obj.setWeaponRecoil, function(...)
-                    if G.noRecoil then
-                        return
-                    end
+                    if G.noRecoil then return end
                     return oldSetWeaponRecoil(...)
                 end)
             end)
         end
 
-        -- No Recoil (calculateRecoilOffset)
         if type(obj) == "function" and debug.getinfo(obj).name == "calculateRecoilOffset" then
             pcall(function()
                 local calculateRecoilOffset
                 calculateRecoilOffset = hookfunction(obj, function(...) 
-                    if G.noRecoil then
-                        return UDim2.new() 
-                    end
+                    if G.noRecoil then return UDim2.new() end
                     return calculateRecoilOffset(...)
                 end)
             end)
         end 
 
-        -- No Recoil (weaponKick)
         if type(obj) == "table" and rawget(obj, "weaponKick") then
             pcall(function()
                 local oldweaponkick
                 oldweaponkick = hookfunction(obj.weaponKick, function(p1, p2)
-                    if G.noRecoil then
-                        return
-                    end
+                    if G.noRecoil then return end
                     return oldweaponkick(p1, p2)
                 end)
             end)
         end 
         
-        -- No Spread (getTrueSpread)
         if type(obj) == "table" and rawget(obj, "getTrueSpread") then
             pcall(function()
                 local oldgettruespread
                 oldgettruespread = hookfunction(obj.getTrueSpread, function(p1)  
-                    if G.noSpread then
-                        return 0
-                    end
+                    if G.noSpread then return 0 end
                     return oldgettruespread(p1)
                 end)
             end)
         end
-    end
-end)
-
--- FireRate Loop
-task.spawn(function()
-    while task.wait(0.05) do
-        pcall(function()
-            if G.firerate then
-                for _, obj in next, firerateobjs do
-                    pcall(function()
-                        setreadonly(obj, false)
-                        rawset(obj, "FireRate", math.max(G.firerateValue or 0.05, 0.001))
-                        setreadonly(obj, true)
-                    end)
-                end
-            else
-                for i, obj in next, firerateobjs do
-                    pcall(function()
-                        if originalFirerate[i] then
-                            setreadonly(obj, false)
-                            rawset(obj, "FireRate", originalFirerate[i].FireRate) 
-                            setreadonly(obj, true)
-                        end
-                    end)
-                end
-            end
-        end)
     end
 end)
 
@@ -1193,10 +1385,12 @@ local gmg = Instance.new("UIGridLayout") gmg.CellSize = isMobile and UDim2.new(0
 
 toggle(gmGrid, "Rapid Fire", "firerate", 165, nil, G)
 toggle(gmGrid, "Full Auto", "autoFire", 165, nil, G)
+toggle(gmGrid, "Custom RPM", "customRpm", 165, nil, G)
 toggle(gmGrid, "No Recoil", "noRecoil", 165, nil, G)
 toggle(gmGrid, "No Spread", "noSpread", 165, nil, G)
 
 slider(gunModPage, "Fire Delay (Sec)", G, "firerateValue", 0.01, 0.2, 0.01, UDim2.new(0, 12, 0, 160), isMobile and 340 or 408)
+slider(gunModPage, "Custom RPM Value", G, "rpmValue", 100, 3000, 50, UDim2.new(0, 12, 0, 215), isMobile and 340 or 408)
 
 -- Skins Logic UI
 local selectedWeapon = nil
@@ -1372,6 +1566,7 @@ _G.RebornUnload = function()
         BulletModule._performRaycast = _G.__originalPerformRaycast
         _G.__originalPerformRaycast = nil
     end
+    WeaponEngine.cleanup()
     pcall(function() inputConn:Disconnect() end)
     pcall(function() espConn:Disconnect() end)
     for _, s in pairs(pool) do removeSet(s) end
