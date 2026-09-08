@@ -1009,7 +1009,7 @@ local T = {
     accentBright = Color3.fromRGB(180, 160, 255),  -- Bright Pastel Purple
     accentDim = Color3.fromRGB(0, 0, 0),        -- Muted Purple
     text = Color3.fromRGB(240, 240, 255),          -- Crisp Light Blue-White
-    dim = Color3.fromRGB(150, 150, 190),           -- Soft Grey-Purple
+    dim = Color3.fromRGB(120, 190, 255),           -- Soft Grey-Purple
     off = Color3.fromRGB(35, 35, 55),              -- Toggle Off Dark State
     green = Color3.fromRGB(135, 206, 250),         -- Light Blue Active Accent
 }
@@ -1020,7 +1020,7 @@ local animatedGradients = {}
 local function applyGradient3Color(parent)
     local grad = Instance.new("UIGradient")
     grad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(135, 206, 250)), -- Light Blue
+        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(120, 180, 255)), -- Light Blue
         ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180, 160, 255)), -- Pastel Purple
         ColorSequenceKeypoint.new(1.0, Color3.fromRGB(200, 220, 255))  -- Soft Lavender Blue
     })
