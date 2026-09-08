@@ -327,7 +327,7 @@ local G = CFG.gunmod
 local GUNMOD_DEF = { firerate = false, firerateValue = 0.05, noRecoil = false, noSpread = false, autoFire = false, customRpm = false, rpmValue = 800 }
 for k, v in pairs(GUNMOD_DEF) do if G[k] == nil then G[k] = v end end
 
-local COL_ENEMY = Color3.fromRGB(180, 160, 255)
+local COL_ENEMY = Color3.fromRGB(135, 206, 235)
 local COL_TEAM = Color3.fromRGB(135, 206, 250)
 local BONES = { 
     { "Head", "UpperTorso" }, { "UpperTorso", "LowerTorso" }, { "UpperTorso", "LeftUpperArm" }, 
@@ -509,7 +509,7 @@ local function espFrame()
 end
 
 -- ===================== SILENT AIM LOGIC & FOV COLOR ADJUSTMENT =====================
-local COLOR_FOV_BASE = Color3.fromRGB(180, 160, 255)
+local COLOR_FOV_BASE = Color3.fromRGB(135, 206, 235)
 local COLOR_FOV_LOCKED = Color3.fromRGB(0, 255, 100)
 
 local fovO = D("Circle", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.5, NumSides = 64, Filled = false })
@@ -1005,13 +1005,13 @@ local T = {
     panel = Color3.fromRGB(0, 0, 0),            -- Deep Purple-Blue
     card = Color3.fromRGB(0, 0, 0),             -- Dark Card Background
     stroke = Color3.fromRGB(0, 0, 0),        -- Soft Purple Border
-    accent = Color3.fromRGB(135, 206, 250),        -- Light Sky Blue
-    accentBright = Color3.fromRGB(180, 160, 255),  -- Bright Pastel Purple
+    accent = Color3.fromRGB(255, 255, 255),        -- Light Sky Blue
+    accentBright = Color3.fromRGB(135, 206, 235),  -- Bright Pastel Purple
     accentDim = Color3.fromRGB(0, 0, 0),        -- Muted Purple
-    text = Color3.fromRGB(240, 240, 255),          -- Crisp Light Blue-White
-    dim = Color3.fromRGB(120, 190, 255),           -- Soft Grey-Purple
+    text = Color3.fromRGB(255, 255, 255),          -- Crisp Light Blue-White
+    dim = Color3.fromRGB(255, 255, 255),           -- Soft Grey-Purple
     off = Color3.fromRGB(35, 35, 55),              -- Toggle Off Dark State
-    green = Color3.fromRGB(135, 206, 250),         -- Light Blue Active Accent
+    green = Color3.fromRGB(135, 206, 235),         -- Light Blue Active Accent
 }
 
 -- Gradient Provider & Animation Manager
@@ -1020,9 +1020,9 @@ local animatedGradients = {}
 local function applyGradient3Color(parent)
     local grad = Instance.new("UIGradient")
     grad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(120, 180, 255)), -- Light Blue
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180, 160, 255)), -- Pastel Purple
-        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(200, 220, 255))  -- Soft Lavender Blue
+        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(120, 200, 220)), -- Light Blue
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)), -- Pastel Purple
+        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(80, 200, 220))  -- Soft Lavender Blue
     })
     grad.Rotation = 0
     grad.Parent = parent
