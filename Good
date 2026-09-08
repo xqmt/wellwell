@@ -1170,11 +1170,11 @@ dot.Parent = top
 corner(dot, 4)
 applyGradient3Color(dot)
 
-local ttl = label(top, "Defer", 14, T.text, MAIN_FONT)
+local ttl = label(top, "Defer", 16, T.text, MAIN_FONT)
 ttl.Size = UDim2.new(0, 80, 1, 0)
 ttl.Position = UDim2.new(0, 26, 0, 0)
 
-local ttl2 = label(top, "lol", 18, T.accentBright, MAIN_FONT)
+local ttl2 = label(top, "", 18, T.accentBright, MAIN_FONT)
 ttl2.Size = UDim2.new(0, 30, 1, 0)
 ttl2.Position = UDim2.new(0, 95, 0, 0)
 
