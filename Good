@@ -268,48 +268,6 @@ if type(ViewmodelMod) == "table" and type(ViewmodelMod.new) == "function" then
     end
 end
 
--- ===================== INSTANT SKIN REFRESH HOOKS =====================
-local function forceUpdateActiveWeapons()
-    pcall(function()
-        local char = LP.Character
-        if not char then return end
-        for _, obj in ipairs(char:GetChildren()) do
-            if obj:IsA("Model") and obj.Name ~= "HumanoidRootPart" then
-                -- Force viewmodel recreation/update if available
-                local vmComp = obj:FindFirstChildOfClass("Model")
-                if vmComp then
-                    for _, child in ipairs(vmComp:GetDescendants()) do
-                        if child:IsA("MeshPart") or child:IsA("BasePart") then
-                            -- Touch transparency or trigger property updates to refresh render
-                            child.Transparency = child.Transparency
-                        end
-                    end
-                end
-            end
-        end
-    end)
-end
-
-local function immediateApplySkin()
-    task.spawn(function()
-        pcall(function()
-            local invController = safeRequire(RS.Controllers.InventoryController)
-            if invController and invController.getCurrentInventory then
-                local loadout = invController.getCurrentInventory()
-                if loadout and loadout.CurrentEquipped then
-                    local eq = loadout.CurrentEquipped
-                    if eq.Properties then
-                        local wName = eq.Name
-                        local newW, newS = resolve(wName, eq.Skin)
-                        eq.Skin = newS
-                    end
-                end
-            end
-        end)
-        forceUpdateActiveWeapons()
-    end)
-end
-
 -- ===================== ESP & SILENT AIM CONFIG =====================
 CFG.esp = type(CFG.esp) == "table" and CFG.esp or {}
 local E = CFG.esp
@@ -1703,7 +1661,6 @@ local function buildSkins(weapon)
             saveCfg()
             buildSkins(weapon)
             setStatus(weapon .. " -> " .. s.name, T.green)
-            immediateApplySkin()
         end)
     end
 end
@@ -1715,7 +1672,6 @@ resetBtn.MouseButton1Click:Connect(function()
     if CFG.gloveModel == selectedWeapon then CFG.gloveModel = nil end
     saveCfg()
     buildSkins(selectedWeapon)
-    immediateApplySkin()
     setStatus("Reset: " .. selectedWeapon, T.dim)
 end)
 
