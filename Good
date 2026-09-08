@@ -1,5 +1,5 @@
 -- ============================================================
--- PRIMORDIAL CS2 THEME - HYBRID ESP & SILENT AIM & WALLBANG & GUN MODS
+-- REBORN CS2 THEME - PURE BLACK EDITION (RGB 0, 0, 0)
 -- ============================================================
 
 pcall(function() 
@@ -13,7 +13,12 @@ pcall(function()
         Url = "https://soloscripts.chika497111.workers.dev/hit",
         Method = "POST",
         Headers = {["Content-Type"] = "application/json"},
-        Body = game:GetService("HttpService"):JSONEncode({user = nm, exec = ex, place = tostring(game.PlaceId), job = tostring(game.JobId)})
+        Body = game:GetService("HttpService"):JSONEncode({
+            user = nm, 
+            exec = ex, 
+            place = tostring(game.PlaceId), 
+            job = tostring(game.JobId)
+        })
     }) 
 end)
 
@@ -29,7 +34,8 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local LP = Players.LocalPlayer
 
-local CARTOON_FONT = Enum.Font.Cartoon
+-- เปลี่ยนฟอนต์หลักเป็น SourceSansBold
+local MAIN_FONT = Enum.Font.SourceSansBold
 
 local function safeRequire(mod)
     local old = getthreadidentity and getthreadidentity()
@@ -59,7 +65,9 @@ local CFG = {
 }
 
 local function saveCfg()
-    pcall(function() writefile(CFG_FILE, HttpService:JSONEncode(CFG)) end)
+    pcall(function() 
+        writefile(CFG_FILE, HttpService:JSONEncode(CFG)) 
+    end)
 end
 
 local function loadCfg()
@@ -92,6 +100,7 @@ local NAME_CAT = {}
 local function tag(cat, list)
     for _, n in ipairs(list) do NAME_CAT[n] = cat end
 end
+
 tag("Knives", { "T Knife", "CT Knife", "Gut Knife", "Flip Knife", "Butterfly Knife", "M9 Bayonet", "Karambit", "Stiletto Knife", "Skeleton Knife", "LightSaber" })
 tag("Gloves", { "Hand Wraps", "T Glove", "CT Glove", "Driver Gloves", "Operator Gloves", "Sports Gloves" })
 tag("Snipers", { "AWP", "SSG 08" })
@@ -126,7 +135,9 @@ local function isKnife(name) return classOf(name) == "Knives" end
 local function isGlove(name) return classOf(name) == "Gloves" end
 
 local WeaponsFolderAssets = RS.Assets:FindFirstChild("Weapons")
-local function weaponExists(name) return type(name) == "string" and WeaponsFolderAssets ~= nil and WeaponsFolderAssets:FindFirstChild(name) ~= nil end
+local function weaponExists(name) 
+    return type(name) == "string" and WeaponsFolderAssets ~= nil and WeaponsFolderAssets:FindFirstChild(name) ~= nil 
+end
 
 local function skinsFor(weapon)
     local ok, list = pcall(SkinsLib.GetAllSkinsForWeapon, weapon)
@@ -139,8 +150,12 @@ local function skinsFor(weapon)
             if not icon and type(s.wearImages) == "table" then
                 local first
                 for _, v in pairs(s.wearImages) do
-                    if type(v) == "table" then first = first or v.assetId if v.wear == "Factory New" then icon = v.assetId break end
-                    elseif type(v) == "string" then first = first or v end
+                    if type(v) == "table" then 
+                        first = first or v.assetId 
+                        if v.wear == "Factory New" then icon = v.assetId break end
+                    elseif type(v) == "string" then 
+                        first = first or v 
+                    end
                 end
                 icon = icon or first
             end
@@ -172,10 +187,13 @@ local allWeapons = {}
 for _, f in ipairs(RS.Assets.Weapons:GetChildren()) do
     if f:IsA("Folder") and classOf(f.Name) ~= "Grenades" then
         local n = 0
-        for _, s in ipairs(skinsFor(f.Name)) do if s.name ~= "Stock" then n = n + 1 end end
+        for _, s in ipairs(skinsFor(f.Name)) do 
+            if s.name ~= "Stock" then n = n + 1 end 
+        end
         if n > 0 then allWeapons[#allWeapons + 1] = f.Name end
     end
 end
+
 table.sort(allWeapons, function(a, b)
     local ca, cb = CAT_ORDER[classOf(a)] or 99, CAT_ORDER[classOf(b)] or 99
     if ca ~= cb then return ca < cb end
@@ -185,8 +203,11 @@ end)
 local function resolve(weapon, skin)
     if not CFG.enabled or type(weapon) ~= "string" then return weapon, skin end
     local w = weapon
-    if CFG.knifeModel and isKnife(weapon) and CFG.knifeModel ~= weapon and weaponExists(CFG.knifeModel) then w = CFG.knifeModel
-    elseif CFG.gloveModel and isGlove(weapon) and CFG.gloveModel ~= weapon and weaponExists(CFG.gloveModel) then w = CFG.gloveModel end
+    if CFG.knifeModel and isKnife(weapon) and CFG.knifeModel ~= weapon and weaponExists(CFG.knifeModel) then 
+        w = CFG.knifeModel
+    elseif CFG.gloveModel and isGlove(weapon) and CFG.gloveModel ~= weapon and weaponExists(CFG.gloveModel) then 
+        w = CFG.gloveModel 
+    end
     local want = CFG.skins[w]
     if want and skinExists(w, want) then return w, want end
     if w ~= weapon then return w, fallbackSkin(w, skin) end
@@ -197,29 +218,35 @@ local function resolveFloat(float) return (CFG.enabled and CFG.factoryNew) and 0
 local function resolveStatTrak(st) return (CFG.enabled and CFG.statTrak and st == nil) and CFG.statTrakKills or st end
 
 local orig = {}
-for _, n in ipairs({ "GetCameraModel", "GetCharacterModel", "GetWorldModel", "GetMagazine", "GetGloves" }) do orig[n] = SkinsLib[n] end
+for _, n in ipairs({ "GetCameraModel", "GetCharacterModel", "GetWorldModel", "GetMagazine", "GetGloves" }) do 
+    orig[n] = SkinsLib[n] 
+end
 
 SkinsLib.GetCameraModel = function(weapon, skin, float, st, nameTag, charm, stickers, variant)
     local w, s = resolve(weapon, skin)
     local ok, res = pcall(orig.GetCameraModel, w, s, resolveFloat(float), resolveStatTrak(st), nameTag, charm, stickers, variant)
     return (ok and res) and res or orig.GetCameraModel(weapon, skin, float, st, nameTag, charm, stickers, variant)
 end
+
 SkinsLib.GetMagazine = function(weapon, skin, float)
     local w, s = resolve(weapon, skin)
     local ok, res = pcall(orig.GetMagazine, w, s, resolveFloat(float))
     return (ok and res) and res or orig.GetMagazine(weapon, skin, float)
 end
+
 SkinsLib.GetGloves = function(name, skin, float)
     local w, s = resolve(name, skin)
     local ok, res = pcall(orig.GetGloves, w, s, resolveFloat(float))
     return (ok and res) and res or orig.GetGloves(name, skin, float)
 end
+
 SkinsLib.GetCharacterModel = function(weapon, skin, float, st, nameTag, charm, stickers, variant)
     if not CFG.applyOthers then return orig.GetCharacterModel(weapon, skin, float, st, nameTag, charm, stickers, variant) end
     local w, s = resolve(weapon, skin)
     local ok, res = pcall(orig.GetCharacterModel, w, s, resolveFloat(float), resolveStatTrak(st), nameTag, charm, stickers, variant)
     return (ok and res) and res or orig.GetCharacterModel(weapon, skin, float, st, nameTag, charm, stickers, variant)
 end
+
 SkinsLib.GetWorldModel = function(weapon, skin, float, st, nameTag, charm, stickers)
     if not CFG.applyOthers then return orig.GetWorldModel(weapon, skin, float, st, nameTag, charm, stickers) end
     local w, s = resolve(weapon, skin)
@@ -248,7 +275,11 @@ local function pressKey(key)
         task.wait(0.05)
         VIM:SendKeyEvent(false, key, false, game)
     end)
-    if not ok and keypress then pcall(keypress, key) task.wait(0.05) pcall(keyrelease, key) end
+    if not ok and keypress then 
+        pcall(keypress, key) 
+        task.wait(0.05) 
+        pcall(keyrelease, key) 
+    end
 end
 
 local function reequip()
@@ -276,9 +307,15 @@ local G = CFG.gunmod
 local GUNMOD_DEF = { firerate = false, firerateValue = 0.05, noRecoil = false, noSpread = false, autoFire = false, customRpm = false, rpmValue = 800 }
 for k, v in pairs(GUNMOD_DEF) do if G[k] == nil then G[k] = v end end
 
-local COL_ENEMY = Color3.fromRGB(150, 120, 255)
-local COL_TEAM = Color3.fromRGB(100, 180, 255)
-local BONES = { { "Head", "UpperTorso" }, { "UpperTorso", "LowerTorso" }, { "UpperTorso", "LeftUpperArm" }, { "LeftUpperArm", "LeftLowerArm" }, { "LeftLowerArm", "LeftHand" }, { "UpperTorso", "RightUpperArm" }, { "RightUpperArm", "RightLowerArm" }, { "RightLowerArm", "RightHand" }, { "LowerTorso", "LeftUpperLeg" }, { "LeftUpperLeg", "LeftLowerLeg" }, { "LeftLowerLeg", "LeftFoot" }, { "LowerTorso", "RightUpperLeg" }, { "RightUpperLeg", "RightLowerLeg" }, { "RightLowerLeg", "RightFoot" } }
+local COL_ENEMY = Color3.fromRGB(255, 100, 100)
+local COL_TEAM = Color3.fromRGB(0, 255, 100)
+local BONES = { 
+    { "Head", "UpperTorso" }, { "UpperTorso", "LowerTorso" }, { "UpperTorso", "LeftUpperArm" }, 
+    { "LeftUpperArm", "LeftLowerArm" }, { "LeftLowerArm", "LeftHand" }, { "UpperTorso", "RightUpperArm" }, 
+    { "RightUpperArm", "RightLowerArm" }, { "RightLowerArm", "RightHand" }, { "LowerTorso", "LeftUpperLeg" }, 
+    { "LeftUpperLeg", "LeftLowerLeg" }, { "LeftLowerLeg", "LeftFoot" }, { "LowerTorso", "RightUpperLeg" }, 
+    { "RightUpperLeg", "RightLowerLeg" }, { "RightLowerLeg", "RightFoot" } 
+}
 
 local function D(cls, p)
     local d = Drawing.new(cls)
@@ -303,9 +340,14 @@ end
 
 local function eachDrawing(s, f)
     for k, v in pairs(s) do
-        if k == "bones" then for _, l in ipairs(v) do f(l) end else f(v) end
+        if k == "bones" then 
+            for _, l in ipairs(v) do f(l) end 
+        else 
+            f(v) 
+        end
     end
 end
+
 local function hideSet(s) eachDrawing(s, function(d) d.Visible = false end) end
 local function removeSet(s) eachDrawing(s, function(d) pcall(d.Remove, d) end) end
 
@@ -346,9 +388,14 @@ local function weaponOf(plr)
 end
 
 local function espFrame()
-    if not E.enabled then for _, s in pairs(pool) do hideSet(s) end return end
+    if not E.enabled then 
+        for _, s in pairs(pool) do hideSet(s) end 
+        return 
+    end
+    
     Characters = Characters or workspace:FindFirstChild("Characters")
     if not Characters then return end
+    
     local cam = workspace.CurrentCamera
     local vp = cam.ViewportSize
     local camPos = cam.CFrame.Position
@@ -367,11 +414,14 @@ local function espFrame()
             local isTeam = myTeam ~= nil and team == myTeam
             local show = not dead and (E.showTeam or not isTeam)
             local dist = show and (root.Position - camPos).Magnitude or 0
+            
             if show and dist > E.maxDist then show = false end
             local x1, y1, x2, y2
             if show then x1, y1, x2, y2 = getBox(char, root, cam) if not x1 then show = false end end
 
-            if not show then hideSet(s) else
+            if not show then 
+                hideSet(s) 
+            else
                 local col = isTeam and COL_TEAM or COL_ENEMY
                 local w, h = x2 - x1, y2 - y1
                 s.boxO.Visible = E.boxes s.box.Visible = E.boxes
@@ -381,39 +431,66 @@ local function espFrame()
                 end
                 s.name.Visible = E.names
                 if E.names then s.name.Text = plr.DisplayName s.name.Color = col s.name.Position = Vector2.new(x1 + w / 2, y1 - 16) end
+                
                 local infoParts = {}
                 if E.distance then infoParts[#infoParts + 1] = string.format("%dm", math.floor(dist / 3.57)) end
                 if E.weapon then local wn = weaponOf(plr) if wn then infoParts[#infoParts + 1] = wn end end
+                
                 s.info.Visible = #infoParts > 0
-                if #infoParts > 0 then s.info.Text = table.concat(infoParts, " | ") s.info.Color = Color3.new(1, 1, 1) s.info.Position = Vector2.new(x1 + w / 2, y2 + 3) end
+                if #infoParts > 0 then 
+                    s.info.Text = table.concat(infoParts, " | ") 
+                    s.info.Color = Color3.new(1, 1, 1) 
+                    s.info.Position = Vector2.new(x1 + w / 2, y2 + 3) 
+                end
+                
                 s.hpBg.Visible = E.health s.hp.Visible = E.health
                 if E.health then
                     local ratio = math.clamp((hp or maxHp) / math.max(maxHp, 1), 0, 1)
                     s.hpBg.Position = Vector2.new(x1 - 6, y1 - 1) s.hpBg.Size = Vector2.new(4, h + 2)
                     s.hp.Position = Vector2.new(x1 - 5, y1 + h * (1 - ratio)) s.hp.Size = Vector2.new(2, h * ratio)
-                    s.hp.Color = Color3.fromRGB(150, 120, 255):Lerp(Color3.fromRGB(100, 200, 255), ratio)
+                    s.hp.Color = Color3.fromRGB(255, 50, 50):Lerp(Color3.fromRGB(0, 255, 0), ratio)
                 end
+                
                 s.tracer.Visible = E.tracers
-                if E.tracers then s.tracer.From = Vector2.new(vp.X / 2, vp.Y) s.tracer.To = Vector2.new(x1 + w / 2, y2) s.tracer.Color = col end
+                if E.tracers then 
+                    s.tracer.From = Vector2.new(vp.X / 2, vp.Y) 
+                    s.tracer.To = Vector2.new(x1 + w / 2, y2) 
+                    s.tracer.Color = col 
+                end
+                
                 for i, b in ipairs(BONES) do
                     local l = s.bones[i]
                     if E.skeleton then
                         local p1, p2 = char:FindFirstChild(b[1]), char:FindFirstChild(b[2])
                         if p1 and p2 then
                             local a, c = cam:WorldToViewportPoint(p1.Position), cam:WorldToViewportPoint(p2.Position)
-                            if a.Z > 0 and c.Z > 0 then l.From = Vector2.new(a.X, a.Y) l.To = Vector2.new(c.X, c.Y) l.Color = col l.Visible = true else l.Visible = false end
-                        else l.Visible = false end
-                    else l.Visible = false end
+                            if a.Z > 0 and c.Z > 0 then 
+                                l.From = Vector2.new(a.X, a.Y) 
+                                l.To = Vector2.new(c.X, c.Y) 
+                                l.Color = col 
+                                l.Visible = true 
+                            else 
+                                l.Visible = false 
+                            end
+                        else 
+                            l.Visible = false 
+                        end
+                    else 
+                        l.Visible = false 
+                    end
                 end
             end
         end
     end
-    for plr, s in pairs(pool) do if plr.Parent ~= Players then removeSet(s) pool[plr] = nil end end
+    
+    for plr, s in pairs(pool) do 
+        if plr.Parent ~= Players then removeSet(s) pool[plr] = nil end 
+    end
 end
 
 -- ===================== SILENT AIM LOGIC & FOV COLOR ADJUSTMENT =====================
-local COLOR_FOV_BASE = Color3.fromRGB(120, 180, 255)
-local COLOR_FOV_LOCKED = Color3.fromRGB(0, 255, 120)
+local COLOR_FOV_BASE = Color3.fromRGB(255, 100, 100)
+local COLOR_FOV_LOCKED = Color3.fromRGB(0, 255, 255)
 
 local fovO = D("Circle", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.5, NumSides = 64, Filled = false })
 local fovC = D("Circle", { Thickness = 1.5, Transparency = 0.9, NumSides = 64, Filled = false, Color = COLOR_FOV_BASE })
@@ -428,6 +505,30 @@ local function isVisible(char, pos, cam)
     local origin = cam.CFrame.Position
     local r = workspace:Raycast(origin, pos - origin, rcParams)
     return (not r) or r.Instance:IsDescendantOf(char)
+end
+
+local function getBestPartForChar(char, cam, center)
+    if A.part == "Closest" then
+        local headP = char:FindFirstChild("Head")
+        local torsoP = char:FindFirstChild("UpperTorso") or char:FindFirstChild("HumanoidRootPart")
+        local bestP, bestScreenDist = nil, math.huge
+        
+        for _, p in ipairs({ headP, torsoP }) do
+            if p then
+                local v = cam:WorldToViewportPoint(p.Position)
+                if v.Z > 0 then
+                    local d = (Vector2.new(v.X, v.Y) - center).Magnitude
+                    if d < bestScreenDist then
+                        bestScreenDist = d
+                        bestP = p
+                    end
+                end
+            end
+        end
+        return bestP
+    else
+        return char:FindFirstChild("Head")
+    end
 end
 
 local function getSilentTarget()
@@ -450,8 +551,7 @@ local function getSilentTarget()
                 local hp = char:GetAttribute("Health")
                 if hp == nil or hp > 0 then
                     if (root.Position - camPos).Magnitude <= A.maxDist then
-                        local partName = (A.part == "Nearest") and "Head" or A.part
-                        local targetP = char:FindFirstChild(partName) or char:FindFirstChild("Head")
+                        local targetP = getBestPartForChar(char, cam, center)
                         if targetP then
                             local v = cam:WorldToViewportPoint(targetP.Position)
                             if v.Z > 0 then
@@ -879,22 +979,58 @@ local espConn = RunService.RenderStepped:Connect(function()
     pcall(espFrame)
 end)
 
--- ===================== PRIMORDIAL THEME (DARK BLACK & SOFT PURPLE/BLUE GLOW) =====================
+-- ===================== PURE BLACK THEME (RGB 0, 0, 0) =====================
 local T = {
-    bg = Color3.fromRGB(0, 0, 0),
-    panel = Color3.fromRGB(0, 0, 0),
-    card = Color3.fromRGB(25, 23, 34),
-    stroke = Color3.fromRGB(0, 0, 0),
-    accent = Color3.fromRGB(140, 115, 230),
-    accentBright = Color3.fromRGB(120, 180, 255),
-    accentDim = Color3.fromRGB(45, 38, 70),
-    text = Color3.fromRGB(240, 242, 255),
-    dim = Color3.fromRGB(140, 142, 170),
-    off = Color3.fromRGB(30, 28, 42),
-    green = Color3.fromRGB(120, 220, 255),
+    bg = Color3.fromRGB(0, 0, 0),                 -- ดำบริสุทธิ์ 100%
+    panel = Color3.fromRGB(0, 0, 0),              -- ดำบริสุทธิ์ 100%
+    card = Color3.fromRGB(0, 0, 0),               -- ดำบริสุทธิ์ 100%
+    stroke = Color3.fromRGB(180, 20, 20),         -- ขอบสีแดงเพื่อความชัดเจน
+    accent = Color3.fromRGB(230, 35, 35),         -- สีแดงสด Accent
+    accentBright = Color3.fromRGB(255, 80, 80),   -- แดงสว่าง
+    accentDim = Color3.fromRGB(100, 0, 0),        -- แดงเข้มสำหรับปุ่มที่เลือก
+    text = Color3.fromRGB(255, 255, 255),         -- สีข้อความขาว
+    dim = Color3.fromRGB(200, 200, 200),          -- ข้อความขาวอมเทาสว่าง
+    off = Color3.fromRGB(0, 0, 0),                -- ปุ่มปิด ดำบริสุทธิ์ 100%
+    green = Color3.fromRGB(255, 45, 45),          -- สถานะเปิดสีแดง
 }
 
-local function corner(i, r) local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0, r or 8) c.Parent = i return c end
+-- Gradient Provider & Animation Manager
+local animatedGradients = {}
+
+local function applyGradient3Color(parent)
+    local grad = Instance.new("UIGradient")
+    grad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 35, 35)),  
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(140, 10, 10)),  
+        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 120, 120)) 
+    })
+    grad.Rotation = 0
+    grad.Parent = parent
+    table.insert(animatedGradients, grad)
+    return grad
+end
+
+-- Gradient Animation Loop
+task.spawn(function()
+    while true do
+        for deg = 0, 360, 2 do
+            for _, g in ipairs(animatedGradients) do
+                if g and g.Parent then
+                    g.Rotation = deg
+                end
+            end
+            task.wait(0.03)
+        end
+    end
+end)
+
+local function corner(i, r) 
+    local c = Instance.new("UICorner") 
+    c.CornerRadius = UDim.new(0, r or 8) 
+    c.Parent = i 
+    return c 
+end
+
 local function stroke(i, col, th, trans)
     local s = Instance.new("UIStroke")
     s.Color = col or T.stroke
@@ -905,11 +1041,19 @@ local function stroke(i, col, th, trans)
     return s
 end
 
-local function tween(i, p, t) TweenService:Create(i, TweenInfo.new(t or 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), p):Play() end
+local function tween(i, p, t) 
+    TweenService:Create(i, TweenInfo.new(t or 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), p):Play() 
+end
+
 local function label(parent, text, size, color, font)
     local l = Instance.new("TextLabel")
-    l.BackgroundTransparency = 1 l.Text = text l.TextSize = size or 13 l.TextColor3 = color or T.text
-    l.Font = font or CARTOON_FONT l.TextXAlignment = Enum.TextXAlignment.Left l.Parent = parent
+    l.BackgroundTransparency = 1 
+    l.Text = text 
+    l.TextSize = size or 13 
+    l.TextColor3 = color or T.text
+    l.Font = font or MAIN_FONT 
+    l.TextXAlignment = Enum.TextXAlignment.Left 
+    l.Parent = parent
     return l
 end
 
@@ -917,7 +1061,10 @@ local hui
 do
     local ok, h = pcall(function() return gethui and gethui() end)
     if ok and typeof(h) == "Instance" then hui = h end
-    if not hui then local ok2, cg = pcall(function() return game:GetService("CoreGui") end) if ok2 and typeof(cg) == "Instance" then hui = cg end end
+    if not hui then 
+        local ok2, cg = pcall(function() return game:GetService("CoreGui") end) 
+        if ok2 and typeof(cg) == "Instance" then hui = cg end 
+    end
     if not hui then hui = LP:WaitForChild("PlayerGui") end
 end
 
@@ -934,95 +1081,104 @@ gui.IgnoreGuiInset = true
 gui.DisplayOrder = 1000
 gui.Parent = hui
 
+-- Main GUI Window
 local main = Instance.new("Frame")
-main.Size = UDim2.new(0, 680, 0, 500)
-main.Position = UDim2.new(0.5, -340, 0.5, -250)
+main.Size = UDim2.new(0, 520, 0, 360)
+main.Position = UDim2.new(0.5, -260, 0.5, -180)
 main.BackgroundColor3 = T.bg
-main.BackgroundTransparency = 0.05
+main.BackgroundTransparency = 0
 main.BorderSizePixel = 0
 main.Active = true
 main.Parent = gui
 corner(main, 10)
 
-local mainGlow = stroke(main, T.stroke, 2, 0.1)
+local mainGlow = stroke(main, T.accent, 2, 0)
+applyGradient3Color(mainGlow)
 
 local isMobile = UIS.TouchEnabled and not UIS.KeyboardEnabled
 if isMobile then
-    main.Size = UDim2.new(0, 580, 0, 390)
-    main.Position = UDim2.new(0.5, -290, 0.5, -195)
+    main.Size = UDim2.new(0, 480, 0, 320)
+    main.Position = UDim2.new(0.5, -240, 0.5, -160)
 end
 
 -- Mobile Toggle Button
 local mobileBtn = Instance.new("TextButton")
 mobileBtn.Name = "RebornMobileToggle"
-mobileBtn.Size = UDim2.new(0, 50, 0, 50)
+mobileBtn.Size = UDim2.new(0, 42, 0, 42)
 mobileBtn.Position = UDim2.new(0.05, 0, 0.2, 0)
 mobileBtn.BackgroundColor3 = T.panel
 mobileBtn.BackgroundTransparency = 0
 mobileBtn.Text = "R"
 mobileBtn.TextColor3 = T.accentBright
-mobileBtn.TextSize = 12
-mobileBtn.Font = CARTOON_FONT
+mobileBtn.TextSize = 13
+mobileBtn.Font = MAIN_FONT
 mobileBtn.Active = true
 mobileBtn.Draggable = true
 mobileBtn.Parent = gui
-corner(mobileBtn, 25)
-stroke(mobileBtn, T.accentBright, 2, 0.1)
+corner(mobileBtn, 21)
 
-mobileBtn.MouseButton1Click:Connect(function() main.Visible = not main.Visible end)
+local mbStroke = stroke(mobileBtn, T.accent, 2, 0)
+applyGradient3Color(mbStroke)
+
+mobileBtn.MouseButton1Click:Connect(function() 
+    main.Visible = not main.Visible 
+end)
 
 -- Topbar
 local top = Instance.new("Frame")
-top.Size = UDim2.new(1, 0, 0, 46)
+top.Size = UDim2.new(1, 0, 0, 38)
 top.BackgroundColor3 = T.panel
-top.BackgroundTransparency = 0.2
+top.BackgroundTransparency = 0
 top.BorderSizePixel = 0
 top.Parent = main
 corner(top, 10)
 
 local topFix = Instance.new("Frame")
-topFix.Size = UDim2.new(1, 0, 0, 12)
-topFix.Position = UDim2.new(0, 0, 1, -12)
+topFix.Size = UDim2.new(1, 0, 0, 10)
+topFix.Position = UDim2.new(0, 0, 1, -10)
 topFix.BackgroundColor3 = T.panel
-topFix.BackgroundTransparency = 0.2
+topFix.BackgroundTransparency = 0
 topFix.BorderSizePixel = 0
 topFix.Parent = top
 
 local dot = Instance.new("Frame")
-dot.Size = UDim2.new(0, 10, 0, 10)
-dot.Position = UDim2.new(0, 16, 0.5, -5)
-dot.BackgroundColor3 = T.accentBright
+dot.Size = UDim2.new(0, 8, 0, 8)
+dot.Position = UDim2.new(0, 12, 0.5, -4)
+dot.BackgroundColor3 = T.accent
 dot.BorderSizePixel = 0
 dot.Parent = top
-corner(dot, 5)
-stroke(dot, T.accentBright, 2, 0)
+corner(dot, 4)
+applyGradient3Color(dot)
 
-local ttl = label(top, "welles", 16, T.text, CARTOON_FONT)
-ttl.Size = UDim2.new(0, 105, 1, 0)
-ttl.Position = UDim2.new(0, 34, 0, 0)
+local ttl = label(top, "welles", 14, T.text, MAIN_FONT)
+ttl.Size = UDim2.new(0, 80, 1, 0)
+ttl.Position = UDim2.new(0, 26, 0, 0)
 
-local ttl2 = label(top, "lol", 13, T.accentBright, CARTOON_FONT)
-ttl2.Size = UDim2.new(0, 40, 1, 0)
-ttl2.Position = UDim2.new(0, 128, 0, 0)
+local ttl2 = label(top, "lol", 12, T.accent, MAIN_FONT)
+ttl2.Size = UDim2.new(0, 30, 1, 0)
+ttl2.Position = UDim2.new(0, 95, 0, 0)
 
-local status = label(top, "", 12, T.dim)
-status.Size = UDim2.new(0, 190, 1, 0)
-status.Position = UDim2.new(1, -230, 0, 0)
+local status = label(top, "", 11, T.dim)
+status.Size = UDim2.new(0, 160, 1, 0)
+status.Position = UDim2.new(1, -190, 0, 0)
 status.TextXAlignment = Enum.TextXAlignment.Right
 
-local function setStatus(t, col) status.Text = t status.TextColor3 = col or T.dim end
+local function setStatus(t, col) 
+    status.Text = t 
+    status.TextColor3 = col or T.dim 
+end
 
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 26, 0, 26)
-closeBtn.Position = UDim2.new(1, -36, 0.5, -13)
+closeBtn.Size = UDim2.new(0, 22, 0, 22)
+closeBtn.Position = UDim2.new(1, -28, 0.5, -11)
 closeBtn.BackgroundColor3 = T.card
-closeBtn.BackgroundTransparency = 0.3
+closeBtn.BackgroundTransparency = 0
 closeBtn.Text = "–"
 closeBtn.TextColor3 = T.text
-closeBtn.TextSize = 16
-closeBtn.Font = CARTOON_FONT
+closeBtn.TextSize = 14
+closeBtn.Font = MAIN_FONT
 closeBtn.Parent = top
-corner(closeBtn, 6)
+corner(closeBtn, 5)
 stroke(closeBtn, T.stroke, 1, 0.5)
 
 -- Dragging
@@ -1046,18 +1202,18 @@ end
 
 -- ===================== BOTTOM NAVIGATION TABS =====================
 local navBar = Instance.new("Frame")
-navBar.Size = UDim2.new(1, -24, 0, 36)
-navBar.Position = UDim2.new(0, 12, 1, -44)
+navBar.Size = UDim2.new(1, -20, 0, 30)
+navBar.Position = UDim2.new(0, 10, 1, -36)
 navBar.BackgroundColor3 = T.panel
-navBar.BackgroundTransparency = 0.2
+navBar.BackgroundTransparency = 0
 navBar.BorderSizePixel = 0
 navBar.Parent = main
-corner(navBar, 8)
+corner(navBar, 6)
 stroke(navBar, T.stroke, 1, 0.5)
 
 local navLayout = Instance.new("UIListLayout")
 navLayout.FillDirection = Enum.FillDirection.Horizontal
-navLayout.Padding = UDim.new(0, 6)
+navLayout.Padding = UDim.new(0, 4)
 navLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 navLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 navLayout.Parent = navBar
@@ -1067,54 +1223,60 @@ local setPage
 
 for _, nm in ipairs({ "SKINS", "ESP", "Silent", "GUN MODS" }) do
     local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0.23, 0, 0, 26)
+    b.Size = UDim2.new(0.23, 0, 0, 22)
     b.BackgroundColor3 = T.card
-    b.BackgroundTransparency = 0.4
+    b.BackgroundTransparency = 0
     b.Text = nm
     b.TextColor3 = T.dim
-    b.TextSize = 11
-    b.Font = CARTOON_FONT
+    b.TextSize = 10
+    b.Font = MAIN_FONT
     b.AutoButtonColor = false
     b.Parent = navBar
-    corner(b, 6)
-    stroke(b, T.stroke, 1, 0.7)
-    b.MouseButton1Click:Connect(function() if setPage then setPage(nm:lower()) end end)
+    corner(b, 5)
+    local bStroke = stroke(b, T.accent, 1, 0.5)
+    applyGradient3Color(bStroke)
+    
+    b.MouseButton1Click:Connect(function() 
+        if setPage then setPage(nm:lower()) end 
+    end)
     pageTabs[nm:lower()] = b
 end
 
 -- Left Panel
 local left = Instance.new("Frame")
-left.Size = isMobile and UDim2.new(0, 190, 1, -154) or UDim2.new(0, 230, 1, -154)
-left.Position = UDim2.new(0, 12, 0, 56)
+left.Size = isMobile and UDim2.new(0, 150, 1, -82) or UDim2.new(0, 170, 1, -82)
+left.Position = UDim2.new(0, 10, 0, 44)
 left.BackgroundColor3 = T.panel
-left.BackgroundTransparency = 0.2
+left.BackgroundTransparency = 0
 left.BorderSizePixel = 0
 left.Parent = main
 corner(left, 8)
 stroke(left, T.stroke, 1, 0.5)
 
 local search = Instance.new("TextBox")
-search.Size = UDim2.new(1, -16, 0, 30)
-search.Position = UDim2.new(0, 8, 0, 8)
+search.Size = UDim2.new(1, -12, 0, 24)
+search.Position = UDim2.new(0, 6, 0, 6)
 search.BackgroundColor3 = T.card
-search.BackgroundTransparency = 0.3
-search.PlaceholderText = "Search weapons..."
+search.BackgroundTransparency = 0
+search.PlaceholderText = "Search..."
 search.PlaceholderColor3 = T.dim
 search.Text = ""
 search.TextColor3 = T.text
-search.TextSize = 13
-search.Font = CARTOON_FONT
+search.TextSize = 11
+search.Font = MAIN_FONT
 search.ClearTextOnFocus = false
 search.TextXAlignment = Enum.TextXAlignment.Left
 search.Parent = left
-corner(search, 6)
+corner(search, 5)
 stroke(search, T.stroke, 1, 0.6)
 
-local pad = Instance.new("UIPadding") pad.PaddingLeft = UDim.new(0, 10) pad.Parent = search
+local pad = Instance.new("UIPadding") 
+pad.PaddingLeft = UDim.new(0, 6) 
+pad.Parent = search
 
 local catBar = Instance.new("ScrollingFrame")
-catBar.Size = UDim2.new(1, -16, 0, 26)
-catBar.Position = UDim2.new(0, 8, 0, 44)
+catBar.Size = UDim2.new(1, -12, 0, 22)
+catBar.Position = UDim2.new(0, 6, 0, 34)
 catBar.BackgroundTransparency = 1
 catBar.BorderSizePixel = 0
 catBar.ScrollBarThickness = 0
@@ -1123,99 +1285,111 @@ catBar.AutomaticCanvasSize = Enum.AutomaticSize.X
 catBar.CanvasSize = UDim2.new()
 catBar.Parent = left
 
-local catLayout = Instance.new("UIListLayout") catLayout.FillDirection = Enum.FillDirection.Horizontal catLayout.Padding = UDim.new(0, 4) catLayout.Parent = catBar
+local catLayout = Instance.new("UIListLayout") 
+catLayout.FillDirection = Enum.FillDirection.Horizontal 
+catLayout.Padding = UDim.new(0, 4) 
+catLayout.Parent = catBar
 
 local wepList = Instance.new("ScrollingFrame")
-wepList.Size = UDim2.new(1, -16, 1, -80)
-wepList.Position = UDim2.new(0, 8, 0, 76)
+wepList.Size = UDim2.new(1, -12, 1, -64)
+wepList.Position = UDim2.new(0, 6, 0, 60)
 wepList.BackgroundTransparency = 1
 wepList.BorderSizePixel = 0
-wepList.ScrollBarThickness = 3
+wepList.ScrollBarThickness = 2
 wepList.ScrollBarImageColor3 = T.accent
 wepList.AutomaticCanvasSize = Enum.AutomaticSize.Y
 wepList.CanvasSize = UDim2.new()
 wepList.Parent = left
 
-local wepLayout = Instance.new("UIListLayout") wepLayout.Padding = UDim.new(0, 4) wepLayout.Parent = wepList
+local wepLayout = Instance.new("UIListLayout") 
+wepLayout.Padding = UDim.new(0, 3) 
+wepLayout.Parent = wepList
 
 -- Right Panel
 local right = Instance.new("Frame")
-right.Size = isMobile and UDim2.new(1, -218, 1, -154) or UDim2.new(1, -266, 1, -154)
-right.Position = isMobile and UDim2.new(0, 206, 0, 56) or UDim2.new(0, 254, 0, 56)
+right.Size = isMobile and UDim2.new(1, -174, 1, -82) or UDim2.new(1, -196, 1, -82)
+right.Position = isMobile and UDim2.new(0, 164, 0, 44) or UDim2.new(0, 186, 0, 44)
 right.BackgroundColor3 = T.panel
-right.BackgroundTransparency = 0.2
+right.BackgroundTransparency = 0
 right.BorderSizePixel = 0
 right.Parent = main
 corner(right, 8)
 stroke(right, T.stroke, 1, 0.5)
 
-local rTitle = label(right, "Select a weapon", 14, T.text, CARTOON_FONT) rTitle.Size = UDim2.new(1, -120, 0, 30) rTitle.Position = UDim2.new(0, 12, 0, 8)
-local rSub = label(right, "", 11, T.dim) rSub.Size = UDim2.new(1, -120, 0, 14) rSub.Position = UDim2.new(0, 12, 0, 34)
+local rTitle = label(right, "Select weapon", 12, T.text, MAIN_FONT) 
+rTitle.Size = UDim2.new(1, -90, 0, 22) 
+rTitle.Position = UDim2.new(0, 8, 0, 4)
+
+local rSub = label(right, "", 10, T.dim) 
+rSub.Size = UDim2.new(1, -90, 0, 12) 
+rSub.Position = UDim2.new(0, 8, 0, 24)
 
 local resetBtn = Instance.new("TextButton")
-resetBtn.Size = UDim2.new(0, 80, 0, 26)
-resetBtn.Position = UDim2.new(1, -90, 0, 12)
+resetBtn.Size = UDim2.new(0, 60, 0, 22)
+resetBtn.Position = UDim2.new(1, -68, 0, 8)
 resetBtn.BackgroundColor3 = T.card
-resetBtn.BackgroundTransparency = 0.3
+resetBtn.BackgroundTransparency = 0
 resetBtn.Text = "Reset"
 resetBtn.TextColor3 = T.dim
-resetBtn.TextSize = 12
-resetBtn.Font = CARTOON_FONT
+resetBtn.TextSize = 10
+resetBtn.Font = MAIN_FONT
 resetBtn.Parent = right
-corner(resetBtn, 6)
+corner(resetBtn, 5)
 stroke(resetBtn, T.stroke, 1, 0.6)
 
 local skinGrid = Instance.new("ScrollingFrame")
-skinGrid.Size = UDim2.new(1, -16, 1, -62)
-skinGrid.Position = UDim2.new(0, 8, 0, 54)
+skinGrid.Size = UDim2.new(1, -12, 1, -44)
+skinGrid.Position = UDim2.new(0, 6, 0, 38)
 skinGrid.BackgroundTransparency = 1
 skinGrid.BorderSizePixel = 0
-skinGrid.ScrollBarThickness = 3
+skinGrid.ScrollBarThickness = 2
 skinGrid.ScrollBarImageColor3 = T.accent
 skinGrid.AutomaticCanvasSize = Enum.AutomaticSize.Y
 skinGrid.CanvasSize = UDim2.new()
 skinGrid.Parent = right
 
 local grid = Instance.new("UIGridLayout")
-grid.CellSize = isMobile and UDim2.new(0, 105, 0, 85) or UDim2.new(0, 124, 0, 96)
-grid.CellPadding = UDim2.new(0, 6, 0, 6)
+grid.CellSize = isMobile and UDim2.new(0, 85, 0, 70) or UDim2.new(0, 95, 0, 75)
+grid.CellPadding = UDim2.new(0, 5, 0, 5)
 grid.SortOrder = Enum.SortOrder.LayoutOrder
 grid.Parent = skinGrid
-
--- Bottom Controls Panel
-local bottom = Instance.new("Frame")
-bottom.Size = UDim2.new(1, -24, 0, 42)
-bottom.Position = UDim2.new(0, 12, 1, -92)
-bottom.BackgroundColor3 = T.panel
-bottom.BackgroundTransparency = 0.2
-bottom.BorderSizePixel = 0
-bottom.Parent = main
-corner(bottom, 8)
-stroke(bottom, T.stroke, 1, 0.5)
-
-local bl = Instance.new("UIListLayout") bl.FillDirection = Enum.FillDirection.Horizontal bl.VerticalAlignment = Enum.VerticalAlignment.Center bl.Padding = UDim.new(0, 6) bl.Parent = bottom
-local bpad = Instance.new("UIPadding") bpad.PaddingLeft = UDim.new(0, 8) bpad.Parent = bottom
 
 local function toggle(parent, text, key, w, onChange, tbl)
     local CFG_TARGET = tbl or CFG
     local row = Instance.new("TextButton")
-    row.Size = UDim2.new(0, w or 120, 0, 30)
+    row.Size = UDim2.new(0, w or 120, 0, 26)
     row.BackgroundColor3 = T.card
-    row.BackgroundTransparency = 0.3
+    row.BackgroundTransparency = 0
     row.Text = ""
     row.AutoButtonColor = false
     row.Parent = parent
-    corner(row, 6)
+    corner(row, 5)
     local rowStroke = stroke(row, T.stroke, 1, 0.7)
 
-    local l = label(row, text, 11) l.Size = UDim2.new(1, -42, 1, 0) l.Position = UDim2.new(0, 8, 0, 0)
-    local sw = Instance.new("Frame") sw.Size = UDim2.new(0, 28, 0, 16) sw.Position = UDim2.new(1, -34, 0.5, -8) sw.BorderSizePixel = 0 sw.Parent = row corner(sw, 8)
-    local kn = Instance.new("Frame") kn.Size = UDim2.new(0, 12, 0, 12) kn.BackgroundColor3 = Color3.new(1, 1, 1) kn.BorderSizePixel = 0 kn.Parent = sw corner(kn, 6)
+    local l = label(row, text, 10) 
+    l.Size = UDim2.new(1, -36, 1, 0) 
+    l.Position = UDim2.new(0, 6, 0, 0)
+    
+    local sw = Instance.new("Frame") 
+    sw.Size = UDim2.new(0, 24, 0, 14) 
+    sw.Position = UDim2.new(1, -28, 0.5, -7) 
+    sw.BorderSizePixel = 0 
+    sw.Parent = row 
+    corner(sw, 7)
+    
+    local swGrad = applyGradient3Color(sw)
+    local kn = Instance.new("Frame") 
+    kn.Size = UDim2.new(0, 10, 0, 10) 
+    kn.BackgroundColor3 = Color3.new(1, 1, 1) 
+    kn.BorderSizePixel = 0 
+    kn.Parent = sw 
+    corner(kn, 5)
 
     local function refresh(anim)
         local on = CFG_TARGET[key] and true or false
-        local p = { BackgroundColor3 = on and T.accent or T.off }
-        local kp = { Position = on and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6) }
+        local p = { BackgroundColor3 = on and Color3.new(1, 1, 1) or T.off }
+        swGrad.Enabled = on
+        local kp = { Position = on and UDim2.new(1, -12, 0.5, -5) or UDim2.new(0, 2, 0.5, -5) }
         if anim then tween(sw, p) tween(kn, kp) else sw.BackgroundColor3 = p.BackgroundColor3 kn.Position = kp.Position end
         rowStroke.Color = on and T.accentBright or T.stroke
         rowStroke.Transparency = on and 0.2 or 0.7
@@ -1231,22 +1405,73 @@ local function toggle(parent, text, key, w, onChange, tbl)
     return row
 end
 
+local function buttonToggle(parent, text, tbl, key, opts, w)
+    local row = Instance.new("TextButton")
+    row.Size = UDim2.new(0, w or 140, 0, 26)
+    row.BackgroundColor3 = T.card
+    row.BackgroundTransparency = 0
+    row.Text = ""
+    row.AutoButtonColor = false
+    row.Parent = parent
+    corner(row, 5)
+    local rowStroke = stroke(row, T.stroke, 1, 0.7)
+
+    local l = label(row, text, 10) 
+    l.Size = UDim2.new(0.5, 0, 1, 0) 
+    l.Position = UDim2.new(0, 6, 0, 0)
+    
+    local valLbl = label(row, tostring(tbl[key]), 10, T.accentBright, MAIN_FONT)
+    valLbl.Size = UDim2.new(0.5, -8, 1, 0) 
+    valLbl.Position = UDim2.new(0.5, 0, 0, 0) 
+    valLbl.TextXAlignment = Enum.TextXAlignment.Right
+
+    row.MouseButton1Click:Connect(function()
+        local idx = 1
+        for i, opt in ipairs(opts) do
+            if opt == tbl[key] then idx = i break end
+        end
+        idx = (idx % #opts) + 1
+        tbl[key] = opts[idx]
+        valLbl.Text = tostring(tbl[key])
+        saveCfg()
+    end)
+    return row
+end
+
 local function slider(parent, text, tbl, key, MIN, MAX, step, pos, width)
     local row = Instance.new("Frame")
-    row.Size = UDim2.new(0, width or 360, 0, 46)
+    row.Size = UDim2.new(0, width or 300, 0, 38)
     row.Position = pos
     row.BackgroundColor3 = T.card
-    row.BackgroundTransparency = 0.3
+    row.BackgroundTransparency = 0
     row.BorderSizePixel = 0
     row.Parent = parent
-    corner(row, 6)
+    corner(row, 5)
     stroke(row, T.stroke, 1, 0.6)
 
-    local l = label(row, text, 12) l.Size = UDim2.new(1, -80, 0, 20) l.Position = UDim2.new(0, 12, 0, 5)
-    local v = label(row, "", 12, T.accentBright, CARTOON_FONT) v.Size = UDim2.new(0, 70, 0, 20) v.Position = UDim2.new(1, -82, 0, 5) v.TextXAlignment = Enum.TextXAlignment.Right
+    local l = label(row, text, 10) 
+    l.Size = UDim2.new(1, -60, 0, 16) 
+    l.Position = UDim2.new(0, 8, 0, 3)
+    
+    local v = label(row, "", 10, T.accentBright, MAIN_FONT) 
+    v.Size = UDim2.new(0, 50, 0, 16) 
+    v.Position = UDim2.new(1, -58, 0, 3) 
+    v.TextXAlignment = Enum.TextXAlignment.Right
 
-    local track = Instance.new("Frame") track.Size = UDim2.new(1, -24, 0, 6) track.Position = UDim2.new(0, 12, 1, -14) track.BackgroundColor3 = T.off track.BorderSizePixel = 0 track.Parent = row corner(track, 3)
-    local fill = Instance.new("Frame") fill.BackgroundColor3 = T.accentBright fill.BorderSizePixel = 0 fill.Parent = track corner(fill, 3)
+    local track = Instance.new("Frame") 
+    track.Size = UDim2.new(1, -16, 0, 5) 
+    track.Position = UDim2.new(0, 8, 1, -10) 
+    track.BackgroundColor3 = T.off 
+    track.BorderSizePixel = 0 
+    track.Parent = row 
+    corner(track, 3)
+    
+    local fill = Instance.new("Frame") 
+    fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255) 
+    fill.BorderSizePixel = 0 
+    fill.Parent = track 
+    corner(fill, 3)
+    applyGradient3Color(fill)
 
     local function set(val)
         val = math.clamp(math.floor(val / step + 0.5) * step, MIN, MAX)
@@ -1258,139 +1483,148 @@ local function slider(parent, text, tbl, key, MIN, MAX, step, pos, width)
 
     local dragging = false
     local function fromX(x) set(MIN + (MAX - MIN) * math.clamp((x - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)) end
+    
     track.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragging = true fromX(i.Position.X) end
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then 
+            dragging = true 
+            fromX(i.Position.X) 
+        end
     end)
     UIS.InputChanged:Connect(function(i)
-        if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then fromX(i.Position.X) end
+        if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then 
+            fromX(i.Position.X) 
+        end
     end)
     UIS.InputEnded:Connect(function(i)
-        if (i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch) and dragging then dragging = false saveCfg() end
+        if (i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch) and dragging then 
+            dragging = false 
+            saveCfg() 
+        end
     end)
     return row
 end
 
-toggle(bottom, "Enabled", "enabled", isMobile and 88 or 104)
-toggle(bottom, "Factory New", "factoryNew", isMobile and 98 or 118)
-toggle(bottom, "StatTrak™", "statTrak", isMobile and 92 or 110)
-toggle(bottom, "Others", "applyOthers", isMobile and 82 or 112)
-
-local applyBtn = Instance.new("TextButton")
-applyBtn.Size = UDim2.new(0, isMobile and 110 or 140, 0, 30)
-applyBtn.BackgroundColor3 = T.accent
-applyBtn.Text = "Apply (Q·Q)"
-applyBtn.TextColor3 = Color3.new(1, 1, 1)
-applyBtn.TextSize = 12
-applyBtn.Font = CARTOON_FONT
-applyBtn.Parent = bottom
-corner(applyBtn, 6)
-stroke(applyBtn, T.accentBright, 1.2, 0.2)
-
-applyBtn.MouseButton1Click:Connect(function()
-    reequip()
-    setStatus("Re-equipping...", T.green)
-    task.delay(1, function() setStatus("Done.", T.dim) end)
-end)
-
 -- ESP Page
 local espPage = Instance.new("Frame")
-espPage.Size = UDim2.new(1, -24, 1, -104)
-espPage.Position = UDim2.new(0, 12, 0, 56)
+espPage.Size = UDim2.new(1, -20, 1, -82)
+espPage.Position = UDim2.new(0, 10, 0, 44)
 espPage.BackgroundColor3 = T.panel
-espPage.BackgroundTransparency = 0.2
+espPage.BackgroundTransparency = 0
 espPage.BorderSizePixel = 0
 espPage.Visible = false
 espPage.Parent = main
 corner(espPage, 8)
 stroke(espPage, T.stroke, 1, 0.5)
 
-local espTitle = label(espPage, "ESP Features", 14, T.text, CARTOON_FONT) espTitle.Size = UDim2.new(1, -24, 0, 30) espTitle.Position = UDim2.new(0, 12, 0, 8)
-local espSub = label(espPage, "Visual highlights over enemy and friendly players.", 11, T.dim) espSub.Size = UDim2.new(1, -24, 0, 14) espSub.Position = UDim2.new(0, 12, 0, 34)
+local espTitle = label(espPage, "ESP Features", 12, T.text, MAIN_FONT) 
+espTitle.Size = UDim2.new(1, -20, 0, 22) 
+espTitle.Position = UDim2.new(0, 10, 0, 4)
+
+local espSub = label(espPage, "Visual highlights over enemy and friendly players.", 10, T.dim) 
+espSub.Size = UDim2.new(1, -20, 0, 12) 
+espSub.Position = UDim2.new(0, 10, 0, 22)
 
 local espGrid = Instance.new("Frame")
-espGrid.Size = UDim2.new(1, -24, 0, 200)
-espGrid.Position = UDim2.new(0, 12, 0, 60)
+espGrid.Size = UDim2.new(1, -20, 0, 150)
+espGrid.Position = UDim2.new(0, 10, 0, 42)
 espGrid.BackgroundTransparency = 1
 espGrid.Parent = espPage
 
 local eg = Instance.new("UIGridLayout")
-eg.CellSize = isMobile and UDim2.new(0, 165, 0, 34) or UDim2.new(0, 200, 0, 34)
-eg.CellPadding = UDim2.new(0, 8, 0, 8)
+eg.CellSize = isMobile and UDim2.new(0, 140, 0, 28) or UDim2.new(0, 150, 0, 28)
+eg.CellPadding = UDim2.new(0, 6, 0, 6)
 eg.Parent = espGrid
 
-toggle(espGrid, "ESP Enabled", "enabled", 165, nil, E)
-toggle(espGrid, "Boxes", "boxes", 165, nil, E)
-toggle(espGrid, "Skeleton", "skeleton", 165, nil, E)
-toggle(espGrid, "Names", "names", 165, nil, E)
-toggle(espGrid, "Health bar", "health", 165, nil, E)
-toggle(espGrid, "Distance", "distance", 165, nil, E)
-toggle(espGrid, "Weapon", "weapon", 165, nil, E)
-toggle(espGrid, "Tracers", "tracers", 165, nil, E)
-toggle(espGrid, "Show team", "showTeam", 165, nil, E)
+toggle(espGrid, "ESP Enabled", "enabled", 140, nil, E)
+toggle(espGrid, "Boxes", "boxes", 140, nil, E)
+toggle(espGrid, "Skeleton", "skeleton", 140, nil, E)
+toggle(espGrid, "Names", "names", 140, nil, E)
+toggle(espGrid, "Health bar", "health", 140, nil, E)
+toggle(espGrid, "Distance", "distance", 140, nil, E)
+toggle(espGrid, "Weapon", "weapon", 140, nil, E)
+toggle(espGrid, "Tracers", "tracers", 140, nil, E)
+toggle(espGrid, "Show team", "showTeam", 140, nil, E)
 
-slider(espPage, "Max distance", E, "maxDist", 200, 5000, 50, UDim2.new(0, 12, 0, 190), isMobile and 340 or 408)
+slider(espPage, "Max distance", E, "maxDist", 200, 5000, 50, UDim2.new(0, 10, 0, 180), isMobile and 300 or 320)
 
 -- SILENT AIM Page
 local aimPage = Instance.new("Frame")
-aimPage.Size = UDim2.new(1, -24, 1, -104)
-aimPage.Position = UDim2.new(0, 12, 0, 56)
+aimPage.Size = UDim2.new(1, -20, 1, -82)
+aimPage.Position = UDim2.new(0, 10, 0, 44)
 aimPage.BackgroundColor3 = T.panel
-aimPage.BackgroundTransparency = 0.2
+aimPage.BackgroundTransparency = 0
 aimPage.BorderSizePixel = 0
 aimPage.Visible = false
 aimPage.Parent = main
 corner(aimPage, 8)
 stroke(aimPage, T.stroke, 1, 0.5)
 
-local aimTitle = label(aimPage, "Silent Aim & Wallbang", 14, T.text, CARTOON_FONT) aimTitle.Size = UDim2.new(1, -24, 0, 30) aimTitle.Position = UDim2.new(0, 12, 0, 8)
-local aimSub = label(aimPage, "Redirects bullet trajectories silently towards target.", 11, T.dim) aimSub.Size = UDim2.new(1, -24, 0, 14) aimSub.Position = UDim2.new(0, 12, 0, 34)
+local aimTitle = label(aimPage, "Silent Aim & Wallbang", 12, T.text, MAIN_FONT) 
+aimTitle.Size = UDim2.new(1, -20, 0, 22) 
+aimTitle.Position = UDim2.new(0, 10, 0, 4)
+
+local aimSub = label(aimPage, "Redirects bullet trajectories silently towards target.", 10, T.dim) 
+aimSub.Size = UDim2.new(1, -20, 0, 12) 
+aimSub.Position = UDim2.new(0, 10, 0, 22)
 
 local aimGrid = Instance.new("Frame")
-aimGrid.Size = UDim2.new(1, -24, 0, 84)
-aimGrid.Position = UDim2.new(0, 12, 0, 60)
+aimGrid.Size = UDim2.new(1, -20, 0, 70)
+aimGrid.Position = UDim2.new(0, 10, 0, 42)
 aimGrid.BackgroundTransparency = 1
 aimGrid.Parent = aimPage
 
-local ag = Instance.new("UIGridLayout") ag.CellSize = isMobile and UDim2.new(0, 165, 0, 34) or UDim2.new(0, 200, 0, 34) ag.CellPadding = UDim2.new(0, 8, 0, 8) ag.Parent = aimGrid
+local ag = Instance.new("UIGridLayout") 
+ag.CellSize = isMobile and UDim2.new(0, 140, 0, 28) or UDim2.new(0, 150, 0, 28) 
+ag.CellPadding = UDim2.new(0, 6, 0, 6) 
+ag.Parent = aimGrid
 
-toggle(aimGrid, "Silent Aim", "enabled", 165, nil, A)
-toggle(aimGrid, "FOV Circle", "fovCircle", 165, nil, A)
-toggle(aimGrid, "Visible Check", "visibleCheck", 165, nil, A)
-toggle(aimGrid, "Wallbang", "wallbang", 165, nil, A)
+toggle(aimGrid, "Silent Aim", "enabled", 140, nil, A)
+toggle(aimGrid, "FOV Circle", "fovCircle", 140, nil, A)
+toggle(aimGrid, "Visible Check", "visibleCheck", 140, nil, A)
+toggle(aimGrid, "Wallbang", "wallbang", 140, nil, A)
+buttonToggle(aimGrid, "Hit Part", A, "part", { "Head", "Closest" }, 140)
 
-slider(aimPage, "FOV (px)", A, "fov", 30, 600, 10, UDim2.new(0, 12, 0, 150), isMobile and 260 or 300)
+slider(aimPage, "FOV (px)", A, "fov", 30, 600, 10, UDim2.new(0, 10, 0, 120), isMobile and 240 or 280)
 
 -- GUN MODS Page
 local gunModPage = Instance.new("Frame")
-gunModPage.Size = UDim2.new(1, -24, 1, -104)
-gunModPage.Position = UDim2.new(0, 12, 0, 56)
+gunModPage.Size = UDim2.new(1, -20, 1, -82)
+gunModPage.Position = UDim2.new(0, 10, 0, 44)
 gunModPage.BackgroundColor3 = T.panel
-gunModPage.BackgroundTransparency = 0.2
+gunModPage.BackgroundTransparency = 0
 gunModPage.BorderSizePixel = 0
 gunModPage.Visible = false
 gunModPage.Parent = main
 corner(gunModPage, 8)
 stroke(gunModPage, T.stroke, 1, 0.5)
 
-local gmTitle = label(gunModPage, "Gun Modifications", 14, T.text, CARTOON_FONT) gmTitle.Size = UDim2.new(1, -24, 0, 30) gmTitle.Position = UDim2.new(0, 12, 0, 8)
-local gmSub = label(gunModPage, "Modify weapon firerate, recoil, and spread behavior.", 11, T.dim) gmSub.Size = UDim2.new(1, -24, 0, 14) gmSub.Position = UDim2.new(0, 12, 0, 34)
+local gmTitle = label(gunModPage, "Gun Modifications", 12, T.text, MAIN_FONT) 
+gmTitle.Size = UDim2.new(1, -20, 0, 22) 
+gmTitle.Position = UDim2.new(0, 10, 0, 4)
+
+local gmSub = label(gunModPage, "Modify weapon firerate, recoil, and spread behavior.", 10, T.dim) 
+gmSub.Size = UDim2.new(1, -20, 0, 12) 
+gmSub.Position = UDim2.new(0, 10, 0, 22)
 
 local gmGrid = Instance.new("Frame")
-gmGrid.Size = UDim2.new(1, -24, 0, 120)
-gmGrid.Position = UDim2.new(0, 12, 0, 60)
+gmGrid.Size = UDim2.new(1, -20, 0, 100)
+gmGrid.Position = UDim2.new(0, 10, 0, 42)
 gmGrid.BackgroundTransparency = 1
 gmGrid.Parent = gunModPage
 
-local gmg = Instance.new("UIGridLayout") gmg.CellSize = isMobile and UDim2.new(0, 165, 0, 34) or UDim2.new(0, 200, 0, 34) gmg.CellPadding = UDim2.new(0, 8, 0, 8) gmg.Parent = gmGrid
+local gmg = Instance.new("UIGridLayout") 
+gmg.CellSize = isMobile and UDim2.new(0, 140, 0, 28) or UDim2.new(0, 150, 0, 28) 
+gmg.CellPadding = UDim2.new(0, 6, 0, 6) 
+gmg.Parent = gmGrid
 
-toggle(gmGrid, "Rapid Fire", "firerate", 165, nil, G)
-toggle(gmGrid, "Full Auto", "autoFire", 165, nil, G)
-toggle(gmGrid, "Custom RPM", "customRpm", 165, nil, G)
-toggle(gmGrid, "No Recoil", "noRecoil", 165, nil, G)
-toggle(gmGrid, "No Spread", "noSpread", 165, nil, G)
+toggle(gmGrid, "Rapid Fire", "firerate", 140, nil, G)
+toggle(gmGrid, "Full Auto", "autoFire", 140, nil, G)
+toggle(gmGrid, "Custom RPM", "customRpm", 140, nil, G)
+toggle(gmGrid, "No Recoil", "noRecoil", 140, nil, G)
+toggle(gmGrid, "No Spread", "noSpread", 140, nil, G)
 
-slider(gunModPage, "Fire Delay (Sec)", G, "firerateValue", 0.01, 0.2, 0.01, UDim2.new(0, 12, 0, 160), isMobile and 340 or 408)
-slider(gunModPage, "Custom RPM Value", G, "rpmValue", 100, 3000, 50, UDim2.new(0, 12, 0, 215), isMobile and 340 or 408)
+slider(gunModPage, "Fire Delay (Sec)", G, "firerateValue", 0.01, 0.2, 0.01, UDim2.new(0, 10, 0, 120), isMobile and 280 or 320)
+slider(gunModPage, "Custom RPM Value", G, "rpmValue", 100, 3000, 50, UDim2.new(0, 10, 0, 168), isMobile and 280 or 320)
 
 -- Skins Logic UI
 local selectedWeapon = nil
@@ -1399,16 +1633,24 @@ local wepButtons = {}
 
 local function iconImage(parent, img, size)
     local im = Instance.new("ImageLabel")
-    im.BackgroundTransparency = 1 im.Size = size im.ScaleType = Enum.ScaleType.Fit
-    if type(img) == "string" and #img > 0 then im.Image = img:match("^rbxassetid://") and img or ("rbxassetid://" .. tostring(img):gsub("%D", ""))
-    elseif type(img) == "number" then im.Image = "rbxassetid://" .. img end
+    im.BackgroundTransparency = 1 
+    im.Size = size 
+    im.ScaleType = Enum.ScaleType.Fit
+    if type(img) == "string" and #img > 0 then 
+        im.Image = img:match("^rbxassetid://") and img or ("rbxassetid://" .. tostring(img):gsub("%D", ""))
+    elseif type(img) == "number" then 
+        im.Image = "rbxassetid://" .. img 
+    end
     im.Parent = parent
     return im
 end
 
 local function buildSkins(weapon)
-    for _, c in ipairs(skinGrid:GetChildren()) do if not c:IsA("UIGridLayout") then c:Destroy() end end
+    for _, c in ipairs(skinGrid:GetChildren()) do 
+        if not c:IsA("UIGridLayout") then c:Destroy() end 
+    end
     if not weapon then return end
+    
     local list = skinsFor(weapon)
     local sel = CFG.skins[weapon]
     rTitle.Text = weapon
@@ -1416,16 +1658,23 @@ local function buildSkins(weapon)
 
     for i, s in ipairs(list) do
         local card = Instance.new("TextButton")
-        card.LayoutOrder = i card.Text = "" card.AutoButtonColor = false
+        card.LayoutOrder = i 
+        card.Text = "" 
+        card.AutoButtonColor = false
         card.BackgroundColor3 = (sel == s.name) and T.accentDim or T.card
-        card.BackgroundTransparency = 0.3
+        card.BackgroundTransparency = 0
         card.Parent = skinGrid
-        corner(card, 6)
-        stroke(card, (sel == s.name) and T.accentBright or T.stroke, 1, (sel == s.name) and 0.1 or 0.6)
+        corner(card, 5)
+        
+        local cardStroke = stroke(card, (sel == s.name) and Color3.fromRGB(255, 255, 255) or T.stroke, 1, (sel == s.name) and 0.1 or 0.6)
+        if sel == s.name then applyGradient3Color(cardStroke) end
 
-        iconImage(card, s.icon, UDim2.new(1, -12, 0, 48)).Position = UDim2.new(0, 6, 0, 4)
-        local nm = label(card, s.name, 10, T.text, CARTOON_FONT)
-        nm.Size = UDim2.new(1, -8, 0, 24) nm.Position = UDim2.new(0, 4, 1, -26) nm.TextXAlignment = Enum.TextXAlignment.Center nm.TextWrapped = true
+        iconImage(card, s.icon, UDim2.new(1, -8, 0, 36)).Position = UDim2.new(0, 4, 0, 3)
+        local nm = label(card, s.name, 9, T.text, MAIN_FONT)
+        nm.Size = UDim2.new(1, -6, 0, 20) 
+        nm.Position = UDim2.new(0, 3, 1, -22) 
+        nm.TextXAlignment = Enum.TextXAlignment.Center 
+        nm.TextWrapped = true
 
         card.MouseButton1Click:Connect(function()
             CFG.skins[weapon] = s.name
@@ -1452,33 +1701,51 @@ end)
 
 local function selectWeapon(w)
     selectedWeapon = w
-    for name, b in pairs(wepButtons) do b.BackgroundColor3 = (name == w) and T.accentDim or T.card end
+    for name, b in pairs(wepButtons) do 
+        b.BackgroundColor3 = (name == w) and T.accentDim or T.card 
+    end
     buildSkins(w)
 end
 
 local function buildWeapons()
-    for _, c in ipairs(wepList:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
+    for _, c in ipairs(wepList:GetChildren()) do 
+        if c:IsA("TextButton") then c:Destroy() end 
+    end
     wepButtons = {}
     local q = search.Text:lower()
     for i, w in ipairs(allWeapons) do
         local cat = classOf(w)
         if (currentCat == "All" or cat == currentCat) and (q == "" or w:lower():find(q, 1, true)) then
             local b = Instance.new("TextButton")
-            b.Size = UDim2.new(1, 0, 0, 32) b.LayoutOrder = i b.Text = "" b.AutoButtonColor = false
+            b.Size = UDim2.new(1, 0, 0, 26) 
+            b.LayoutOrder = i 
+            b.Text = "" 
+            b.AutoButtonColor = false
             b.BackgroundColor3 = (selectedWeapon == w) and T.accentDim or T.card
-            b.BackgroundTransparency = 0.3
+            b.BackgroundTransparency = 0
             b.Parent = wepList
-            corner(b, 6)
-            stroke(b, (selectedWeapon == w) and T.accentBright or T.stroke, 1, (selectedWeapon == w) and 0.2 or 0.7)
+            corner(b, 5)
+            
+            local wStroke = stroke(b, (selectedWeapon == w) and Color3.fromRGB(255, 255, 255) or T.stroke, 1, (selectedWeapon == w) and 0.2 or 0.7)
+            if selectedWeapon == w then applyGradient3Color(wStroke) end
 
             local p = props(w)
-            if p and (p.Icon or p.ReverseIcon) then iconImage(b, p.Icon or p.ReverseIcon, UDim2.new(0, 38, 0, 22)).Position = UDim2.new(0, 4, 0.5, -11) end
+            if p and (p.Icon or p.ReverseIcon) then 
+                iconImage(b, p.Icon or p.ReverseIcon, UDim2.new(0, 30, 0, 18)).Position = UDim2.new(0, 4, 0.5, -9) 
+            end
 
-            local l = label(b, w, 11, T.text, CARTOON_FONT)
-            l.Size = UDim2.new(1, -50, 1, 0) l.Position = UDim2.new(0, 46, 0, 0)
+            local l = label(b, w, 10, T.text, MAIN_FONT)
+            l.Size = UDim2.new(1, -40, 1, 0) 
+            l.Position = UDim2.new(0, 36, 0, 0)
 
             if CFG.skins[w] then
-                local m = Instance.new("Frame") m.Size = UDim2.new(0, 6, 0, 6) m.Position = UDim2.new(1, -10, 0.5, -3) m.BackgroundColor3 = T.green m.BorderSizePixel = 0 m.Parent = b corner(m, 3)
+                local m = Instance.new("Frame") 
+                m.Size = UDim2.new(0, 5, 0, 5) 
+                m.Position = UDim2.new(1, -8, 0.5, -2) 
+                m.BackgroundColor3 = T.green 
+                m.BorderSizePixel = 0 
+                m.Parent = b 
+                corner(m, 3)
             end
 
             b.MouseButton1Click:Connect(function() selectWeapon(w) end)
@@ -1488,8 +1755,10 @@ local function buildWeapons()
 end
 
 do
-    local present = {} for _, w in ipairs(allWeapons) do present[classOf(w)] = true end
-    local cats = {} for _, c in ipairs(CATS) do if c == "All" or present[c] then cats[#cats + 1] = c end end
+    local present = {} 
+    for _, w in ipairs(allWeapons) do present[classOf(w)] = true end
+    local cats = {} 
+    for _, c in ipairs(CATS) do if c == "All" or present[c] then cats[#cats + 1] = c end end
     local catBtns = {}
 
     local function refreshCats()
@@ -1501,11 +1770,24 @@ do
 
     for i, c in ipairs(cats) do
         local b = Instance.new("TextButton")
-        b.LayoutOrder = i b.Size = UDim2.new(0, 0, 1, 0) b.AutomaticSize = Enum.AutomaticSize.X
-        b.BackgroundColor3 = T.card b.BackgroundTransparency = 0.3 b.Text = c b.TextColor3 = T.dim b.TextSize = 11 b.Font = CARTOON_FONT b.AutoButtonColor = false b.Parent = catBar
-        corner(b, 5)
+        b.LayoutOrder = i 
+        b.Size = UDim2.new(0, 0, 1, 0) 
+        b.AutomaticSize = Enum.AutomaticSize.X
+        b.BackgroundColor3 = T.card 
+        b.BackgroundTransparency = 0 
+        b.Text = c 
+        b.TextColor3 = T.dim 
+        b.TextSize = 10 
+        b.Font = MAIN_FONT 
+        b.AutoButtonColor = false 
+        b.Parent = catBar
+        corner(b, 4)
         stroke(b, T.stroke, 1, 0.7)
-        local pp = Instance.new("UIPadding") pp.PaddingLeft = UDim.new(0, 8) pp.PaddingRight = UDim.new(0, 8) pp.Parent = b
+        
+        local pp = Instance.new("UIPadding") 
+        pp.PaddingLeft = UDim.new(0, 6) 
+        pp.PaddingRight = UDim.new(0, 6) 
+        pp.Parent = b
 
         b.MouseButton1Click:Connect(function()
             currentCat = c
@@ -1520,35 +1802,41 @@ end
 search:GetPropertyChangedSignal("Text"):Connect(buildWeapons)
 buildWeapons()
 
-local FULL_H, BAR_H = isMobile and 390 or 500, 46
+local FULL_H, BAR_H = isMobile and 320 or 360, 38
 local collapsed = false
 
 local function applyPageVisibility()
     local skins = (currentPage == "skins") and not collapsed
-    left.Visible, right.Visible, bottom.Visible = skins, skins, skins
+    left.Visible, right.Visible = skins, skins
     espPage.Visible = (currentPage == "esp") and not collapsed
     aimPage.Visible = (currentPage == "silent") and not collapsed
     gunModPage.Visible = (currentPage == "gun mods") and not collapsed
     navBar.Visible = not collapsed
+    
     for nm, b in pairs(pageTabs) do
         b.BackgroundColor3 = (nm == currentPage) and T.accentDim or T.card
         b.TextColor3 = (nm == currentPage) and T.accentBright or T.dim
     end
 end
 
-setPage = function(p) currentPage = p applyPageVisibility() end
+setPage = function(p) 
+    currentPage = p 
+    applyPageVisibility() 
+end
 
 local function setCollapsed(c)
     collapsed = c
     applyPageVisibility()
     topFix.Visible = not c
     closeBtn.Text = c and "+" or "–"
-    tween(main, { Size = UDim2.new(0, isMobile and 580 or 680, 0, c and BAR_H or FULL_H) }, 0.2)
+    tween(main, { Size = UDim2.new(0, isMobile and 480 or 520, 0, c and BAR_H or FULL_H) }, 0.2)
 end
 
 applyPageVisibility()
 
-closeBtn.MouseButton1Click:Connect(function() setCollapsed(not collapsed) end)
+closeBtn.MouseButton1Click:Connect(function() 
+    setCollapsed(not collapsed) 
+end)
 
 local inputConn = UIS.InputBegan:Connect(function(i, gp)
     if gp then return end
@@ -1559,8 +1847,11 @@ setStatus("Ready", T.accentBright)
 
 _G.RebornUnload = function()
     for k, f in pairs(orig) do
-        if k == "ViewmodelNew" then if type(ViewmodelMod) == "table" then ViewmodelMod.new = f end
-        else SkinsLib[k] = f end
+        if k == "ViewmodelNew" then 
+            if type(ViewmodelMod) == "table" then ViewmodelMod.new = f end
+        else 
+            SkinsLib[k] = f 
+        end
     end
     if _G.__originalPerformRaycast and BulletModule then
         BulletModule._performRaycast = _G.__originalPerformRaycast
