@@ -34,7 +34,7 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local LP = Players.LocalPlayer
 
--- เปลี่ยนฟอนต์หลักเป็น SourceSansBold
+-- เปลี่ยนฟอนต์หลักเป็น Cartoon ตามความต้องการ
 local MAIN_FONT = Enum.Font.SourceSansBold
 
 local function safeRequire(mod)
@@ -51,6 +51,13 @@ end
 local SkinsLib = safeRequire(RS.Database.Components.Libraries.Skins)
 if type(SkinsLib) ~= "table" then error("[Reborn.cs] Failed to load Skins library") end
 local GetWeaponProperties = safeRequire(RS.Components.Common.GetWeaponProperties)
+local CharacterAnimator = safeRequire(RS.Classes.WeaponComponent.Classes.CharacterAnimator)
+local SoundClass = safeRequire(RS.Classes.Sound)
+
+local InventoryController = nil
+pcall(function()
+    InventoryController = require(RS.Controllers.InventoryController)
+end)
 
 local CFG_FILE = "RebornCS.json"
 local CFG = {
@@ -258,13 +265,171 @@ local ViewmodelMod = safeRequire(RS.Classes.WeaponComponent.Classes.Viewmodel)
 if type(ViewmodelMod) == "table" and type(ViewmodelMod.new) == "function" then
     orig.ViewmodelNew = ViewmodelMod.new
     ViewmodelMod.new = function(comp, weapon, skin, inspecting)
-        if CFG.enabled and CFG.knifeModel and type(weapon) == "string" and isKnife(weapon) and CFG.knifeModel ~= weapon and weaponExists(CFG.knifeModel) then
-            local w = CFG.knifeModel
-            local s = CFG.skins[w] or fallbackSkin(w, skin)
+        if CFG.enabled and type(weapon) == "string" then
+            local w, s = resolve(weapon, skin)
             local ok, res = pcall(orig.ViewmodelNew, comp, w, s, inspecting)
             if ok and res then return res end
         end
         return orig.ViewmodelNew(comp, weapon, skin, inspecting)
+    end
+end
+
+-- ===================== LIVE INVENTORY MUTATION ENGINE =====================
+local function getActiveLoadout()
+    if not InventoryController then
+        pcall(function() InventoryController = require(RS.Controllers.InventoryController) end)
+    end
+    if not InventoryController then return nil end
+
+    if type(getupvalues) == "function" or type(debug.getupvalues) == "function" then
+        local gUp = getupvalues or debug.getupvalues
+        for _, fnName in ipairs({"getCurrentEquipped", "removeInventoryItem", "getInventorySlot", "getCurrentInventory"}) do
+            local fn = InventoryController[fnName]
+            if type(fn) == "function" then
+                local ok, uvs = pcall(gUp, fn)
+                if ok and type(uvs) == "table" then
+                    for _, uv in pairs(uvs) do
+                        if type(uv) == "table" and rawget(uv, "Inventory") then
+                            return uv
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+local function isViewingLocalPlayer()
+    local char = LP.Character
+    if not char or char.Parent ~= workspace:FindFirstChild("Characters") then return false end
+    if char:GetAttribute("Dead") == true then return false end
+    local cam = workspace.CurrentCamera
+    local subject = cam and cam.CameraSubject
+    if not subject then return true end
+    return subject == char or subject:IsDescendantOf(char)
+end
+
+local function updateLiveInventory()
+    if not CFG.enabled or not isViewingLocalPlayer() then return end
+    local ld = getActiveLoadout()
+    if not ld or not ld.Inventory then return end
+
+    -- 1. Update All Weapons
+    for slotIdx = 1, 3 do
+        local slotData = ld.Inventory[slotIdx]
+        if slotData and slotData._items and slotData._items[1] then
+            local item = slotData._items[1]
+            local baseName = item.Name
+            
+            local targetWeapon, targetSkin
+            if isKnife(baseName) then
+                local team = LP:GetAttribute("Team")
+                local defaultKnife = (team == "Terrorists") and "T Knife" or "CT Knife"
+                targetWeapon = CFG.knifeModel or defaultKnife
+                targetSkin = (CFG.skins[targetWeapon]) or fallbackSkin(targetWeapon, "Stock")
+            else
+                targetWeapon = baseName
+                targetSkin = CFG.skins[baseName] or item.Skin or "Stock"
+            end
+
+            if item.Name ~= targetWeapon or item.Skin ~= targetSkin then
+                local wasEquipped = (ld.CurrentEquipped == item) or (item.Viewmodel and item.Viewmodel.IsEquipped == true)
+
+                item.Name = targetWeapon
+                item.Skin = targetSkin
+
+                pcall(function()
+                    if GetWeaponProperties then
+                        item.Properties = GetWeaponProperties(targetWeapon) or item.Properties
+                    end
+                end)
+
+                if item.CharacterAnimator and CharacterAnimator then
+                    pcall(function()
+                        item.CharacterAnimator:destroy()
+                        item.CharacterAnimator = CharacterAnimator.new(LP, targetWeapon)
+                    end)
+                end
+
+                if item.Viewmodel then
+                    local vm = item.Viewmodel
+                    vm.Weapon = targetWeapon
+                    vm.CameraModelWeapon = targetWeapon
+                    vm.Skin = targetSkin
+
+                    if SoundClass and SoundClass.new then
+                        pcall(function()
+                            if vm.Sound then vm.Sound:destroy() end
+                            vm.Sound = SoundClass.new(targetWeapon)
+                            if vm.Animation then
+                                vm.Animation.Sound = vm.Sound
+                            end
+                        end)
+                    end
+
+                    local char = LP.Character
+                    if char then
+                        pcall(function() vm:construct(char, item) end)
+                    end
+
+                    if wasEquipped then
+                        pcall(function() vm:equip(false) end)
+                    end
+                end
+
+                pcall(function()
+                    if InventoryController then
+                        if InventoryController.OnInventoryChanged then
+                            InventoryController.OnInventoryChanged:Fire(ld.Inventory)
+                        end
+                        if wasEquipped and InventoryController.OnInventoryItemEquipped then
+                            InventoryController.OnInventoryItemEquipped:Fire(slotIdx, item)
+                        end
+                    end
+                end)
+            end
+        end
+    end
+
+    -- 2. Update Gloves Realtime
+    local gloveSlot = ld.Inventory[7] or ld.Inventory[6] or ld.Inventory["Gloves"]
+    if gloveSlot and gloveSlot._items and gloveSlot._items[1] then
+        local gloveItem = gloveSlot._items[1]
+        local baseGlove = gloveItem.Name
+        local team = LP:GetAttribute("Team")
+        local defaultGlove = (team == "Terrorists") and "T Glove" or "CT Glove"
+        local targetGlove = CFG.gloveModel or baseGlove or defaultGlove
+        local targetGloveSkin = CFG.skins[targetGlove] or fallbackSkin(targetGlove, "Stock")
+
+        if gloveItem.Name ~= targetGlove or gloveItem.Skin ~= targetGloveSkin then
+            gloveItem.Name = targetGlove
+            gloveItem.Skin = targetGloveSkin
+
+            local equippedItem = ld.CurrentEquipped
+            if equippedItem and equippedItem.Viewmodel then
+                pcall(function()
+                    local vm = equippedItem.Viewmodel
+                    if vm.Gloves then
+                        pcall(function() vm.Gloves:Destroy() end)
+                        vm.Gloves = nil
+                    end
+                    local newGloves = SkinsLib.GetGloves(targetGlove, targetGloveSkin, 0)
+                    if newGloves then
+                        if vm.Model then
+                            newGloves.Parent = vm.Model
+                        end
+                        vm.Gloves = newGloves
+                    end
+                end)
+            end
+
+            pcall(function()
+                if InventoryController and InventoryController.OnInventoryChanged then
+                    InventoryController.OnInventoryChanged:Fire(ld.Inventory)
+                end
+            end)
+        end
     end
 end
 
@@ -282,7 +447,7 @@ for k, v in pairs(AIM_DEF) do if A[k] == nil then A[k] = v end end
 -- ===================== GUN MODS CONFIG =====================
 CFG.gunmod = type(CFG.gunmod) == "table" and CFG.gunmod or {}
 local G = CFG.gunmod
-local GUNMOD_DEF = { firerate = false, firerateValue = 0.05, noRecoil = false, noSpread = false, autoFire = false, customRpm = false, rpmValue = 800 }
+local GUNMOD_DEF = { firerate = false, firerateValue = 0.05, autoFire = false }
 for k, v in pairs(GUNMOD_DEF) do if G[k] == nil then G[k] = v end end
 
 local COL_ENEMY = Color3.fromRGB(135, 206, 235)
@@ -466,7 +631,7 @@ local function espFrame()
     end
 end
 
--- ===================== SILENT AIM LOGIC & FOV COLOR ADJUSTMENT =====================
+-- ===================== SILENT AIM LOGIC =====================
 local COLOR_FOV_BASE = Color3.fromRGB(135, 206, 235)
 local COLOR_FOV_LOCKED = Color3.fromRGB(0, 255, 100)
 
@@ -621,48 +786,12 @@ if BulletModule and BulletModule._performRaycast then
     end
 end
 
--- Network Remote Wallbang Injection
-task.spawn(function()
-    pcall(function()
-        local Remotes = safeRequire(RS.Database.Security.Remotes)
-        local ShootWeapon = Remotes and Remotes.Inventory and Remotes.Inventory.ShootWeapon
-        if ShootWeapon and ShootWeapon.Send then
-            if not _G.__origShootWeaponSend then
-                _G.__origShootWeaponSend = ShootWeapon.Send
-            end
-            ShootWeapon.Send = function(packet)
-                if A.enabled and A.wallbang and packet and packet.Bullets and silentTargetPart then
-                    local targetPos = silentTargetPart.Position
-                    for _, bullet in ipairs(packet.Bullets) do
-                        local origin = bullet.Origin
-                        local direction = (targetPos - origin).Unit
-                        local distToTarget = (targetPos - origin).Magnitude
-                        bullet.Direction = direction
-                        local entryNormal = -direction
-                        bullet.Hits = {
-                            { Normal = entryNormal, Position = targetPos + entryNormal * 0.5, Instance = silentTargetPart, Distance = distToTarget, Exit = false, Material = "Plastic" },
-                            { Normal = direction, Position = targetPos - entryNormal * 0.5, Instance = silentTargetPart, Distance = 1.0, Exit = true, Material = "Plastic" }
-                        }
-                        bullet.Distance = nil
-                    end
-                end
-                return _G.__origShootWeaponSend(packet)
-            end
-        end
-    end)
-end)
-
--- ===================== WEAPON ENGINE (FULL AUTO & CUSTOM RPM) =====================
+-- ===================== WEAPON ENGINE =====================
 local WeaponsFolderDb = RS:WaitForChild('Database'):WaitForChild('Custom'):WaitForChild('Weapons')
 
 local WeaponMod = nil
 pcall(function()
     WeaponMod = require(RS:WaitForChild('Components'):WaitForChild('Weapon'))
-end)
-
-local InventoryController = nil
-pcall(function()
-    InventoryController = require(RS:WaitForChild('Controllers'):WaitForChild('InventoryController'))
 end)
 
 local WeaponEngine = {
@@ -689,53 +818,47 @@ local function patchDatabaseConfig(cfg, name)
     if not cfg or type(cfg) ~= 'table' then return end
     if isreadonly(cfg) then setreadonly(cfg, false) end
 
-    local orig = WeaponEngine._originalConfigs[name] or {}
+    local origCfg = WeaponEngine._originalConfigs[name] or {}
 
-    if G.customRpm and G.rpmValue and G.rpmValue > 0 then
-        cfg.FireRate = 60 / G.rpmValue
-    elseif G.firerate and G.firerateValue then
+    if G.firerate and G.firerateValue then
         cfg.FireRate = G.firerateValue
-    elseif orig.FireRate ~= nil then
-        cfg.FireRate = orig.FireRate
+    elseif origCfg.FireRate ~= nil then
+        cfg.FireRate = origCfg.FireRate
     end
 
     if G.autoFire then
         cfg.Automatic = true
-    elseif orig.Automatic ~= nil then
-        cfg.Automatic = orig.Automatic
+    elseif origCfg.Automatic ~= nil then
+        cfg.Automatic = origCfg.Automatic
     end
 
     if type(cfg.FireModes) == 'table' then
         if isreadonly(cfg.FireModes) then setreadonly(cfg.FireModes, false) end
         if type(cfg.FireModes.Primary) == 'table' then
             if isreadonly(cfg.FireModes.Primary) then setreadonly(cfg.FireModes.Primary, false) end
-            if G.customRpm and G.rpmValue and G.rpmValue > 0 then
-                cfg.FireModes.Primary.FireRate = 60 / G.rpmValue
-            elseif G.firerate and G.firerateValue then
+            if G.firerate and G.firerateValue then
                 cfg.FireModes.Primary.FireRate = G.firerateValue
-            elseif orig.FireModes and orig.FireModes.Primary and orig.FireModes.Primary.FireRate ~= nil then
-                cfg.FireModes.Primary.FireRate = orig.FireModes.Primary.FireRate
+            elseif origCfg.FireModes and origCfg.FireModes.Primary and origCfg.FireModes.Primary.FireRate ~= nil then
+                cfg.FireModes.Primary.FireRate = origCfg.FireModes.Primary.FireRate
             end
             if G.autoFire then
                 cfg.FireModes.Primary.HoldRepeat = true
-            elseif orig.FireModes and orig.FireModes.Primary and orig.FireModes.Primary.HoldRepeat ~= nil then
-                cfg.FireModes.Primary.HoldRepeat = orig.FireModes.Primary.HoldRepeat
+            elseif origCfg.FireModes and origCfg.FireModes.Primary and origCfg.FireModes.Primary.HoldRepeat ~= nil then
+                cfg.FireModes.Primary.HoldRepeat = origCfg.FireModes.Primary.HoldRepeat
             end
             table.freeze(cfg.FireModes.Primary)
         end
         if type(cfg.FireModes.Secondary) == 'table' then
             if isreadonly(cfg.FireModes.Secondary) then setreadonly(cfg.FireModes.Secondary, false) end
-            if G.customRpm and G.rpmValue and G.rpmValue > 0 then
-                cfg.FireModes.Secondary.FireRate = 60 / G.rpmValue
-            elseif G.firerate and G.firerateValue then
+            if G.firerate and G.firerateValue then
                 cfg.FireModes.Secondary.FireRate = G.firerateValue
-            elseif orig.FireModes and orig.FireModes.Secondary and orig.FireModes.Secondary.FireRate ~= nil then
-                cfg.FireModes.Secondary.FireRate = orig.FireModes.Secondary.FireRate
+            elseif origCfg.FireModes and origCfg.FireModes.Secondary and origCfg.FireModes.Secondary.FireRate ~= nil then
+                cfg.FireModes.Secondary.FireRate = origCfg.FireModes.Secondary.FireRate
             end
             if G.autoFire then
                 cfg.FireModes.Secondary.HoldRepeat = true
-            elseif orig.FireModes and orig.FireModes.Secondary and orig.FireModes.Secondary.HoldRepeat ~= nil then
-                cfg.FireModes.Secondary.HoldRepeat = orig.FireModes.Secondary.HoldRepeat
+            elseif origCfg.FireModes and origCfg.FireModes.Secondary and origCfg.FireModes.Secondary.HoldRepeat ~= nil then
+                cfg.FireModes.Secondary.HoldRepeat = origCfg.FireModes.Secondary.HoldRepeat
             end
             table.freeze(cfg.FireModes.Secondary)
         end
@@ -752,29 +875,25 @@ local function patchLiveItem(item)
     if props and type(props) == 'table' then
         if isreadonly(props) then setreadonly(props, false) end
 
-        local orig = WeaponEngine._originalConfigs[item.Name] or {}
+        local origCfg = WeaponEngine._originalConfigs[item.Name] or {}
 
-        if G.customRpm and G.rpmValue and G.rpmValue > 0 then
-            props.FireRate = 60 / G.rpmValue
-        elseif G.firerate and G.firerateValue then
+        if G.firerate and G.firerateValue then
             props.FireRate = G.firerateValue
-        elseif orig.FireRate ~= nil then
-            props.FireRate = orig.FireRate
+        elseif origCfg.FireRate ~= nil then
+            props.FireRate = origCfg.FireRate
         end
 
         if G.autoFire then
             props.Automatic = true
-        elseif orig.Automatic ~= nil then
-            props.Automatic = orig.Automatic
+        elseif origCfg.Automatic ~= nil then
+            props.Automatic = origCfg.Automatic
         end
 
         if type(props.FireModes) == 'table' then
             if isreadonly(props.FireModes) then setreadonly(props.FireModes, false) end
             if type(props.FireModes.Primary) == 'table' then
                 if isreadonly(props.FireModes.Primary) then setreadonly(props.FireModes.Primary, false) end
-                if G.customRpm and G.rpmValue and G.rpmValue > 0 then
-                    props.FireModes.Primary.FireRate = 60 / G.rpmValue
-                elseif G.firerate and G.firerateValue then
+                if G.firerate and G.firerateValue then
                     props.FireModes.Primary.FireRate = G.firerateValue
                 end
                 if G.autoFire then
@@ -784,9 +903,7 @@ local function patchLiveItem(item)
             end
             if type(props.FireModes.Secondary) == 'table' then
                 if isreadonly(props.FireModes.Secondary) then setreadonly(props.FireModes.Secondary, false) end
-                if G.customRpm and G.rpmValue and G.rpmValue > 0 then
-                    props.FireModes.Secondary.FireRate = 60 / G.rpmValue
-                elseif G.firerate and G.firerateValue then
+                if G.firerate and G.firerateValue then
                     props.FireModes.Secondary.FireRate = G.firerateValue
                 end
                 if G.autoFire then
@@ -822,8 +939,9 @@ function WeaponEngine.sync()
         end
     end
 
-    if InventoryController and debug.getupvalues then
-        local ok, ups = pcall(debug.getupvalues, InventoryController.getCurrentInventory)
+    if InventoryController and (getupvalues or debug.getupvalues) then
+        local gUp = getupvalues or debug.getupvalues
+        local ok, ups = pcall(gUp, InventoryController.getCurrentInventory)
         if ok and ups and ups[1] then
             local loadout = ups[1]
             if loadout.CurrentEquipped then
@@ -869,6 +987,7 @@ function WeaponEngine.init()
     task.spawn(function()
         while WeaponEngine.LoopActive do
             pcall(WeaponEngine.sync)
+            pcall(updateLiveInventory)
             task.wait(0.35)
         end
     end)
@@ -883,13 +1002,13 @@ function WeaponEngine.cleanup()
     end
     WeaponEngine.Connections = {}
 
-    for name, orig in pairs(WeaponEngine._originalConfigs) do
+    for name, origCfg in pairs(WeaponEngine._originalConfigs) do
         local mod = WeaponsFolderDb:FindFirstChild(name)
         if mod and mod:IsA('ModuleScript') then
             local ok, cfg = pcall(require, mod)
             if ok and type(cfg) == 'table' then
                 if isreadonly(cfg) then setreadonly(cfg, false) end
-                for k, v in pairs(orig) do
+                for k, v in pairs(origCfg) do
                     if type(v) == 'table' then
                         cfg[k] = cloneTable(v)
                     else
@@ -904,53 +1023,7 @@ function WeaponEngine.cleanup()
     WeaponEngine.Initialized = false
 end
 
--- Initialize Engine
 WeaponEngine.init()
-
--- ===================== GUN MODS RECOIL & SPREAD HOOKS =====================
-pcall(function()
-    for _, obj in next, getgc(true) do  
-        if type(obj) == "table" and rawget(obj, "setWeaponRecoil") then
-            pcall(function()
-                local oldSetWeaponRecoil
-                oldSetWeaponRecoil = hookfunction(obj.setWeaponRecoil, function(...)
-                    if G.noRecoil then return end
-                    return oldSetWeaponRecoil(...)
-                end)
-            end)
-        end
-
-        if type(obj) == "function" and debug.getinfo(obj).name == "calculateRecoilOffset" then
-            pcall(function()
-                local calculateRecoilOffset
-                calculateRecoilOffset = hookfunction(obj, function(...) 
-                    if G.noRecoil then return UDim2.new() end
-                    return calculateRecoilOffset(...)
-                end)
-            end)
-        end 
-
-        if type(obj) == "table" and rawget(obj, "weaponKick") then
-            pcall(function()
-                local oldweaponkick
-                oldweaponkick = hookfunction(obj.weaponKick, function(p1, p2)
-                    if G.noRecoil then return end
-                    return oldweaponkick(p1, p2)
-                end)
-            end)
-        end 
-        
-        if type(obj) == "table" and rawget(obj, "getTrueSpread") then
-            pcall(function()
-                local oldgettruespread
-                oldgettruespread = hookfunction(obj.getTrueSpread, function(p1)  
-                    if G.noSpread then return 0 end
-                    return oldgettruespread(p1)
-                end)
-            end)
-        end
-    end
-end)
 
 local espConn = RunService.RenderStepped:Connect(function()
     pcall(silentAimFrame)
@@ -959,28 +1032,27 @@ end)
 
 -- ===================== LIGHT BLUE & PURPLE THEME =====================
 local T = {
-    bg = Color3.fromRGB(0, 0, 0),               -- Dark Midnight Blue
-    panel = Color3.fromRGB(0, 0, 0),            -- Deep Purple-Blue
-    card = Color3.fromRGB(0, 0, 0),             -- Dark Card Background
-    stroke = Color3.fromRGB(0, 0, 0),        -- Soft Purple Border
-    accent = Color3.fromRGB(255, 255, 255),        -- Light Sky Blue
-    accentBright = Color3.fromRGB(135, 206, 235),  -- Bright Pastel Purple
-    accentDim = Color3.fromRGB(0, 0, 0),        -- Muted Purple
-    text = Color3.fromRGB(255, 255, 255),          -- Crisp Light Blue-White
-    dim = Color3.fromRGB(255, 255, 255),           -- Soft Grey-Purple
-    off = Color3.fromRGB(35, 35, 55),              -- Toggle Off Dark State
-    green = Color3.fromRGB(135, 206, 235),         -- Light Blue Active Accent
+    bg = Color3.fromRGB(0, 0, 0),
+    panel = Color3.fromRGB(0, 0, 0),
+    card = Color3.fromRGB(0, 0, 0),
+    stroke = Color3.fromRGB(0, 0, 0),
+    accent = Color3.fromRGB(255, 255, 255),
+    accentBright = Color3.fromRGB(135, 206, 235),
+    accentDim = Color3.fromRGB(0, 0, 0),
+    text = Color3.fromRGB(255, 255, 255),
+    dim = Color3.fromRGB(255, 255, 255),
+    off = Color3.fromRGB(35, 35, 55),
+    green = Color3.fromRGB(135, 206, 235),
 }
 
--- Gradient Provider & Animation Manager
 local animatedGradients = {}
 
 local function applyGradient3Color(parent)
     local grad = Instance.new("UIGradient")
     grad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(120, 200, 220)), -- Light Blue
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)), -- Pastel Purple
-        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(80, 200, 220))  -- Soft Lavender Blue
+        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(120, 200, 220)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(80, 200, 220))
     })
     grad.Rotation = 0
     grad.Parent = parent
@@ -988,7 +1060,6 @@ local function applyGradient3Color(parent)
     return grad
 end
 
--- Gradient Animation Loop
 task.spawn(function()
     while true do
         for deg = 0, 360, 2 do
@@ -1059,7 +1130,6 @@ gui.IgnoreGuiInset = true
 gui.DisplayOrder = 1000
 gui.Parent = hui
 
--- Main GUI Window
 local main = Instance.new("Frame")
 main.Size = UDim2.new(0, 620, 0, 420)
 main.Position = UDim2.new(0.5, -310, 0.5, -210)
@@ -1079,7 +1149,6 @@ if isMobile then
     main.Position = UDim2.new(0.5, -270, 0.5, -180)
 end
 
--- Mobile Toggle Button
 local mobileBtn = Instance.new("TextButton")
 mobileBtn.Name = "RebornMobileToggle"
 mobileBtn.Size = UDim2.new(0, 42, 0, 42)
@@ -1102,7 +1171,6 @@ mobileBtn.MouseButton1Click:Connect(function()
     main.Visible = not main.Visible 
 end)
 
--- Topbar
 local top = Instance.new("Frame")
 top.Size = UDim2.new(1, 0, 0, 38)
 top.BackgroundColor3 = T.panel
@@ -1159,7 +1227,6 @@ closeBtn.Parent = top
 corner(closeBtn, 5)
 stroke(closeBtn, T.stroke, 1, 0.5)
 
--- Dragging
 do
     local dragging, start, startPos
     top.InputBegan:Connect(function(i)
@@ -1178,7 +1245,6 @@ do
     end)
 end
 
--- ===================== BOTTOM NAVIGATION TABS =====================
 local navBar = Instance.new("Frame")
 navBar.Size = UDim2.new(1, -20, 0, 30)
 navBar.Position = UDim2.new(0, 10, 1, -36)
@@ -1220,7 +1286,6 @@ for _, nm in ipairs({ "SKINS", "ESP", "Silent", "GUN MODS" }) do
     pageTabs[nm:lower()] = b
 end
 
--- Left Panel
 local left = Instance.new("Frame")
 left.Size = isMobile and UDim2.new(0, 150, 1, -82) or UDim2.new(0, 170, 1, -82)
 left.Position = UDim2.new(0, 10, 0, 44)
@@ -1252,8 +1317,9 @@ local pad = Instance.new("UIPadding")
 pad.PaddingLeft = UDim.new(0, 6) 
 pad.Parent = search
 
+-- ปรับปรุงขนาดและระยะของ Category Bar
 local catBar = Instance.new("ScrollingFrame")
-catBar.Size = UDim2.new(1, -12, 0, 22)
+catBar.Size = UDim2.new(1, -12, 0, 24)
 catBar.Position = UDim2.new(0, 6, 0, 34)
 catBar.BackgroundTransparency = 1
 catBar.BorderSizePixel = 0
@@ -1266,11 +1332,13 @@ catBar.Parent = left
 local catLayout = Instance.new("UIListLayout") 
 catLayout.FillDirection = Enum.FillDirection.Horizontal 
 catLayout.Padding = UDim.new(0, 4) 
+catLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 catLayout.Parent = catBar
 
+-- ปรับความสูงและตำแหน่งของรายการอาวุธ
 local wepList = Instance.new("ScrollingFrame")
-wepList.Size = UDim2.new(1, -12, 1, -64)
-wepList.Position = UDim2.new(0, 6, 0, 60)
+wepList.Size = UDim2.new(1, -12, 1, -70)
+wepList.Position = UDim2.new(0, 6, 0, 64)
 wepList.BackgroundTransparency = 1
 wepList.BorderSizePixel = 0
 wepList.ScrollBarThickness = 2
@@ -1283,7 +1351,6 @@ local wepLayout = Instance.new("UIListLayout")
 wepLayout.Padding = UDim.new(0, 3) 
 wepLayout.Parent = wepList
 
--- Right Panel
 local right = Instance.new("Frame")
 right.Size = isMobile and UDim2.new(1, -174, 1, -82) or UDim2.new(1, -196, 1, -82)
 right.Position = isMobile and UDim2.new(0, 164, 0, 44) or UDim2.new(0, 186, 0, 44)
@@ -1315,20 +1382,21 @@ resetBtn.Parent = right
 corner(resetBtn, 5)
 stroke(resetBtn, T.stroke, 1, 0.6)
 
+-- ปรับปรุงขนาดและพื้นที่ Grid เลือกสกินเพื่อไม่ให้ตกขอบ
 local skinGrid = Instance.new("ScrollingFrame")
-skinGrid.Size = UDim2.new(1, -12, 1, -44)
-skinGrid.Position = UDim2.new(0, 6, 0, 38)
+skinGrid.Size = UDim2.new(1, -16, 1, -46)
+skinGrid.Position = UDim2.new(0, 8, 0, 38)
 skinGrid.BackgroundTransparency = 1
 skinGrid.BorderSizePixel = 0
-skinGrid.ScrollBarThickness = 2
+skinGrid.ScrollBarThickness = 3
 skinGrid.ScrollBarImageColor3 = T.accent
 skinGrid.AutomaticCanvasSize = Enum.AutomaticSize.Y
 skinGrid.CanvasSize = UDim2.new()
 skinGrid.Parent = right
 
 local grid = Instance.new("UIGridLayout")
-grid.CellSize = isMobile and UDim2.new(0, 85, 0, 70) or UDim2.new(0, 95, 0, 75)
-grid.CellPadding = UDim2.new(0, 5, 0, 5)
+grid.CellSize = isMobile and UDim2.new(0, 105, 0, 78) or UDim2.new(0, 120, 0, 82)
+grid.CellPadding = UDim2.new(0, 6, 0, 6)
 grid.SortOrder = Enum.SortOrder.LayoutOrder
 grid.Parent = skinGrid
 
@@ -1580,7 +1648,7 @@ local gmTitle = label(gunModPage, "Gun Modifications", 12, T.text, MAIN_FONT)
 gmTitle.Size = UDim2.new(1, -20, 0, 22) 
 gmTitle.Position = UDim2.new(0, 10, 0, 4)
 
-local gmSub = label(gunModPage, "Modify weapon firerate, recoil, and spread behavior.", 10, T.dim) 
+local gmSub = label(gunModPage, "Modify weapon firerate and automatic behavior.", 10, T.dim) 
 gmSub.Size = UDim2.new(1, -20, 0, 12) 
 gmSub.Position = UDim2.new(0, 10, 0, 22)
 
@@ -1597,12 +1665,8 @@ gmg.Parent = gmGrid
 
 toggle(gmGrid, "Rapid Fire", "firerate", 140, nil, G)
 toggle(gmGrid, "Full Auto", "autoFire", 140, nil, G)
-toggle(gmGrid, "Custom RPM", "customRpm", 140, nil, G)
-toggle(gmGrid, "No Recoil", "noRecoil", 140, nil, G)
-toggle(gmGrid, "No Spread", "noSpread", 140, nil, G)
 
 slider(gunModPage, "Fire Delay (Sec)", G, "firerateValue", 0.01, 0.2, 0.01, UDim2.new(0, 10, 0, 120), isMobile and 280 or 320)
-slider(gunModPage, "Custom RPM Value", G, "rpmValue", 100, 3000, 50, UDim2.new(0, 10, 0, 168), isMobile and 280 or 320)
 
 -- Skins Logic UI
 local selectedWeapon = nil
@@ -1647,19 +1711,69 @@ local function buildSkins(weapon)
         local cardStroke = stroke(card, (sel == s.name) and Color3.fromRGB(255, 255, 255) or T.stroke, 1, (sel == s.name) and 0.1 or 0.6)
         if sel == s.name then applyGradient3Color(cardStroke) end
 
-        iconImage(card, s.icon, UDim2.new(1, -8, 0, 36)).Position = UDim2.new(0, 4, 0, 3)
+        -- ปรับขนาดรูปสกินและข้อความชื่อสกินให้กระชับและไม่ทับขอบ
+        iconImage(card, s.icon, UDim2.new(1, -8, 0, 40)).Position = UDim2.new(0, 4, 0, 4)
         local nm = label(card, s.name, 9, T.text, MAIN_FONT)
-        nm.Size = UDim2.new(1, -6, 0, 20) 
-        nm.Position = UDim2.new(0, 3, 1, -22) 
+        nm.Size = UDim2.new(1, -8, 0, 24) 
+        nm.Position = UDim2.new(0, 4, 1, -26) 
         nm.TextXAlignment = Enum.TextXAlignment.Center 
         nm.TextWrapped = true
 
         card.MouseButton1Click:Connect(function()
             CFG.skins[weapon] = s.name
             if isKnife(weapon) then CFG.knifeModel = weapon end
-            if isGlove(weapon) then CFG.gloveModel = weapon end
+            
+            -- ตรรกะพิเศษเมื่อเลือกสกินถุงมือใหม่
+            if isGlove(weapon) then 
+                CFG.gloveModel = weapon 
+                
+                -- 1. สลับสกินมีดไปเป็นอีกอัน/Stock แล้วสลับกลับอันเดิม
+                local currentKnifeModel = CFG.knifeModel or "T Knife"
+                local knifeSkins = skinsFor(currentKnifeModel)
+                local currentKnifeSkin = CFG.skins[currentKnifeModel] or "Stock"
+                local tempKnifeSkin = "Stock"
+                
+                for _, kSkin in ipairs(knifeSkins) do
+                    if kSkin.name ~= currentKnifeSkin then
+                        tempKnifeSkin = kSkin.name
+                        break
+                    end
+                end
+                
+                CFG.skins[currentKnifeModel] = tempKnifeSkin
+                updateLiveInventory()
+                task.wait(0.05)
+                CFG.skins[currentKnifeModel] = currentKnifeSkin
+                updateLiveInventory()
+
+                -- 2. เลือกสกินปืนใหม่ทุกอันแล้วสลับกลับอันเดิม
+                for _, wName in ipairs(allWeapons) do
+                    if not isKnife(wName) and not isGlove(wName) then
+                        local wSkins = skinsFor(wName)
+                        if #wSkins > 0 then
+                            local origSkin = CFG.skins[wName] or "Stock"
+                            local tempGunSkin = "Stock"
+                            for _, gSkin in ipairs(wSkins) do
+                                if gSkin.name ~= origSkin then
+                                    tempGunSkin = gSkin.name
+                                    break
+                                end
+                            end
+                            
+                            CFG.skins[wName] = tempGunSkin
+                            updateLiveInventory()
+                            task.wait(0.02)
+                            CFG.skins[wName] = origSkin
+                            updateLiveInventory()
+                        end
+                    end
+                end
+            end
+
             saveCfg()
             buildSkins(weapon)
+            pcall(updateLiveInventory)
+            pcall(WeaponEngine.sync)
             setStatus(weapon .. " -> " .. s.name, T.green)
         end)
     end
@@ -1672,6 +1786,7 @@ resetBtn.MouseButton1Click:Connect(function()
     if CFG.gloveModel == selectedWeapon then CFG.gloveModel = nil end
     saveCfg()
     buildSkins(selectedWeapon)
+    pcall(updateLiveInventory)
     setStatus("Reset: " .. selectedWeapon, T.dim)
 end)
 
@@ -1747,7 +1862,7 @@ do
     for i, c in ipairs(cats) do
         local b = Instance.new("TextButton")
         b.LayoutOrder = i 
-        b.Size = UDim2.new(0, 0, 1, 0) 
+        b.Size = UDim2.new(0, 0, 1, -2) 
         b.AutomaticSize = Enum.AutomaticSize.X
         b.BackgroundColor3 = T.card 
         b.BackgroundTransparency = 0 
@@ -1761,8 +1876,8 @@ do
         stroke(b, T.stroke, 1, 0.7)
         
         local pp = Instance.new("UIPadding") 
-        pp.PaddingLeft = UDim.new(0, 6) 
-        pp.PaddingRight = UDim.new(0, 6) 
+        pp.PaddingLeft = UDim.new(0, 8) 
+        pp.PaddingRight = UDim.new(0, 8) 
         pp.Parent = b
 
         b.MouseButton1Click:Connect(function()
