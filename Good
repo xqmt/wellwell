@@ -450,8 +450,8 @@ local G = CFG.gunmod
 local GUNMOD_DEF = { firerate = false, firerateValue = 0.05, autoFire = false }
 for k, v in pairs(GUNMOD_DEF) do if G[k] == nil then G[k] = v end end
 
-local COL_ENEMY = Color3.fromRGB(135, 206, 235)
-local COL_TEAM = Color3.fromRGB(135, 206, 250)
+local COL_ENEMY = Color3.fromRGB(255, 100, 100)
+local COL_TEAM = Color3.fromRGB(135, 206, 235)
 local BONES = { 
     { "Head", "UpperTorso" }, { "UpperTorso", "LowerTorso" }, { "UpperTorso", "LeftUpperArm" }, 
     { "LeftUpperArm", "LeftLowerArm" }, { "LeftLowerArm", "LeftHand" }, { "UpperTorso", "RightUpperArm" }, 
@@ -632,7 +632,7 @@ local function espFrame()
 end
 
 -- ===================== SILENT AIM LOGIC =====================
-local COLOR_FOV_BASE = Color3.fromRGB(135, 206, 235)
+local COLOR_FOV_BASE = Color3.fromRGB(255, 100, 100)
 local COLOR_FOV_LOCKED = Color3.fromRGB(0, 255, 100)
 
 local fovO = D("Circle", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.5, NumSides = 64, Filled = false })
