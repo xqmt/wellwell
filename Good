@@ -1155,7 +1155,7 @@ dot.BorderSizePixel = 0
 dot.Parent = top
 corner(dot, 5)
 
-local ttl = label(top, "REBORN CS2", 15, T.text, MAIN_FONT)
+local ttl = label(top, "REBORN Bloxstrike", 15, T.text, MAIN_FONT)
 ttl.Size = UDim2.new(0, 120, 1, 0)
 ttl.Position = UDim2.new(0, 28, 0, 0)
 
