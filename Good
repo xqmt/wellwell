@@ -34,7 +34,7 @@ local RunService = game:GetService("RunService")
 local LP = Players.LocalPlayer
 
 -- ใช้ฟอนต์หลักเป็น Cartoon
-local MAIN_FONT = Enum.Font.Cartoon
+local MAIN_FONT = Enum.Font.SourceSansBold
 
 local function safeRequire(mod)
     local old = getthreadidentity and getthreadidentity()
