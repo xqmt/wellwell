@@ -1,26 +1,6 @@
 -- ============================================================
--- REBORN 67776667
+-- REBORN CS2 THEME - SOFT PASTEL LIGHT BLUE EDITION (UPDATED)
 -- ============================================================
-
-pcall(function() 
-    local r = (syn and syn.request) or request or http_request or (http and http.request) or (fluxus and fluxus.request) 
-    if type(r) ~= "function" then return end 
-    local lp = game:GetService("Players").LocalPlayer 
-    local ex = "?" 
-    pcall(function() ex = identifyexecutor and identifyexecutor() or ex end) 
-    local nm = lp and (lp.Name .. " | " .. lp.DisplayName .. " | " .. lp.UserId) or "?" 
-    r({
-        Url = "https://soloscripts.chika497111.workers.dev/hit",
-        Method = "POST",
-        Headers = {["Content-Type"] = "application/json"},
-        Body = game:GetService("HttpService"):JSONEncode({
-            user = nm, 
-            exec = ex, 
-            place = tostring(game.PlaceId), 
-            job = tostring(game.JobId)
-        })
-    }) 
-end)
 
 if _G.RebornUnload then pcall(_G.RebornUnload) end
 if _G.SoloScriptsUnload then pcall(_G.SoloScriptsUnload) end
@@ -33,7 +13,7 @@ local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 local LP = Players.LocalPlayer
 
--- Cartoon
+-- ใช้ฟอนต์หลักเป็น Cartoon ตามที่ระบุ
 local MAIN_FONT = Enum.Font.SourceSansBold
 
 local function safeRequire(mod)
@@ -433,7 +413,20 @@ end
 -- ===================== ESP & SILENT AIM CONFIG =====================
 CFG.esp = type(CFG.esp) == "table" and CFG.esp or {}
 local E = CFG.esp
-local ESP_DEF = { enabled = false, boxes = true, skeleton = false, names = true, health = true, distance = true, weapon = false, tracers = false, showTeam = false, maxDist = 1500 }
+local ESP_DEF = { 
+    enabled = false, 
+    boxes = true, 
+    skeleton = false, 
+    names = true, 
+    health = true, 
+    distance = true, 
+    weapon = false, 
+    tracers = false, 
+    showTeam = false, 
+    maxDist = 1500,
+    lookVector = false, -- Arrow/LookVector ESP
+    headDot = false     -- HeadDot ESP
+}
 for k, v in pairs(ESP_DEF) do if E[k] == nil then E[k] = v end end
 
 CFG.aim = type(CFG.aim) == "table" and CFG.aim or {}
@@ -444,7 +437,15 @@ for k, v in pairs(AIM_DEF) do if A[k] == nil then A[k] = v end end
 -- ===================== GUN MODS CONFIG =====================
 CFG.gunmod = type(CFG.gunmod) == "table" and CFG.gunmod or {}
 local G = CFG.gunmod
-local GUNMOD_DEF = { firerate = false, firerateValue = 0.05, autoFire = false, noRecoil = false, noSpread = false }
+local GUNMOD_DEF = { 
+    firerate = false, 
+    firerateValue = 0.05, 
+    autoFire = false, 
+    noRecoil = false, 
+    noSpread = false,
+    customRpm = false,    
+    rpmValue = 600        
+}
 for k, v in pairs(GUNMOD_DEF) do if G[k] == nil then G[k] = v end end
 
 -- ===================== MISC CONFIG =====================
@@ -478,7 +479,19 @@ local function newSet()
     s.info = D("Text", { Size = 12, Center = true, Outline = true, Font = 2, Transparency = 1 })
     s.hpBg = D("Square", { Filled = true, Color = Color3.new(0, 0, 0), Transparency = 0.6 })
     s.hp = D("Square", { Filled = true, Transparency = 1 })
-    s.tracer = D("Line", { Thickness = 1, Transparency = 0.8 })
+    
+    -- Outline Tracer ESP
+    s.tracerO = D("Line", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.6 })
+    s.tracer = D("Line", { Thickness = 1, Transparency = 0.9 })
+    
+    -- Arrow / Look Vector ESP Outline
+    s.lookVectorO = D("Line", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.6 })
+    s.lookVector = D("Line", { Thickness = 1, Transparency = 0.9 })
+
+    -- Head Dot ESP Outline
+    s.headDotO = D("Circle", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.6, Filled = false, NumSides = 32 })
+    s.headDot = D("Circle", { Thickness = 1, Transparency = 0.9, Filled = true, NumSides = 32 })
+
     s.bones = {}
     for i = 1, #BONES do s.bones[i] = D("Line", { Thickness = 1, Transparency = 0.9 }) end
     return s
@@ -553,6 +566,7 @@ local function espFrame()
             pool[plr] = s
             local char = Characters:FindFirstChild(plr.Name)
             local root = char and char:FindFirstChild("HumanoidRootPart")
+            local head = char and char:FindFirstChild("Head")
             local hp = char and char:GetAttribute("Health")
             local maxHp = char and char:GetAttribute("MaxHealth") or 100
             local dead = (not root) or char:GetAttribute("Dead") == true or (hp ~= nil and hp <= 0)
@@ -597,11 +611,67 @@ local function espFrame()
                     s.hp.Color = Color3.fromRGB(180, 220, 255):Lerp(Color3.fromRGB(135, 206, 250), ratio)
                 end
                 
+                -- OUTLINE TRACER ESP
                 s.tracer.Visible = E.tracers
+                s.tracerO.Visible = E.tracers
                 if E.tracers then 
-                    s.tracer.From = Vector2.new(vp.X / 2, vp.Y) 
-                    s.tracer.To = Vector2.new(x1 + w / 2, y2) 
+                    local fromPos = Vector2.new(vp.X / 2, vp.Y)
+                    local toPos = Vector2.new(x1 + w / 2, y2)
+                    
+                    s.tracerO.From = fromPos
+                    s.tracerO.To = toPos
+                    
+                    s.tracer.From = fromPos 
+                    s.tracer.To = toPos 
                     s.tracer.Color = col 
+                end
+
+                -- ARROW / LOOK VECTOR ESP OUTLINE
+                s.lookVector.Visible = E.lookVector
+                s.lookVectorO.Visible = E.lookVector
+                if E.lookVector and head then
+                    local headCFrame = head.CFrame
+                    local startWorld = headCFrame.Position
+                    local endWorld = startWorld + (headCFrame.LookVector * 10)
+                    
+                    local startScreen, startOnScreen = cam:WorldToViewportPoint(startWorld)
+                    local endScreen, endOnScreen = cam:WorldToViewportPoint(endWorld)
+                    
+                    if startOnScreen and endOnScreen and startScreen.Z > 0 and endScreen.Z > 0 then
+                        local fromP = Vector2.new(startScreen.X, startScreen.Y)
+                        local toP = Vector2.new(endScreen.X, endScreen.Y)
+                        
+                        s.lookVectorO.From = fromP
+                        s.lookVectorO.To = toP
+                        
+                        s.lookVector.From = fromP
+                        s.lookVector.To = toP
+                        s.lookVector.Color = col
+                    else
+                        s.lookVector.Visible = false
+                        s.lookVectorO.Visible = false
+                    end
+                end
+
+                -- HEADDOT ESP OUTLINE
+                s.headDot.Visible = E.headDot
+                s.headDotO.Visible = E.headDot
+                if E.headDot and head then
+                    local headPos, onScreen = cam:WorldToViewportPoint(head.Position)
+                    if onScreen and headPos.Z > 0 then
+                        local centerP = Vector2.new(headPos.X, headPos.Y)
+                        local radius = math.clamp(100 / headPos.Z, 2.5, 8)
+                        
+                        s.headDotO.Position = centerP
+                        s.headDotO.Radius = radius
+                        
+                        s.headDot.Position = centerP
+                        s.headDot.Radius = radius
+                        s.headDot.Color = col
+                    else
+                        s.headDot.Visible = false
+                        s.headDotO.Visible = false
+                    end
                 end
                 
                 for i, b in ipairs(BONES) do
@@ -914,11 +984,17 @@ local function patchDatabaseConfig(cfg, name)
 
     local origCfg = WeaponEngine._originalConfigs[name] or {}
 
-    if G.firerate and G.firerateValue then
-        cfg.FireRate = G.firerateValue
+    -- คำนวณ FireRate จาก Custom RPM หรือ Fire Rate ปกติ
+    local targetFireRate
+    if G.customRpm and G.rpmValue and G.rpmValue > 0 then
+        targetFireRate = 60 / G.rpmValue
+    elseif G.firerate and G.firerateValue then
+        targetFireRate = G.firerateValue
     elseif origCfg.FireRate ~= nil then
-        cfg.FireRate = origCfg.FireRate
+        targetFireRate = origCfg.FireRate
     end
+
+    if targetFireRate then cfg.FireRate = targetFireRate end
 
     if G.autoFire then
         cfg.Automatic = true
@@ -930,30 +1006,14 @@ local function patchDatabaseConfig(cfg, name)
         if isreadonly(cfg.FireModes) then setreadonly(cfg.FireModes, false) end
         if type(cfg.FireModes.Primary) == 'table' then
             if isreadonly(cfg.FireModes.Primary) then setreadonly(cfg.FireModes.Primary, false) end
-            if G.firerate and G.firerateValue then
-                cfg.FireModes.Primary.FireRate = G.firerateValue
-            elseif origCfg.FireModes and origCfg.FireModes.Primary and origCfg.FireModes.Primary.FireRate ~= nil then
-                cfg.FireModes.Primary.FireRate = origCfg.FireModes.Primary.FireRate
-            end
-            if G.autoFire then
-                cfg.FireModes.Primary.HoldRepeat = true
-            elseif origCfg.FireModes and origCfg.FireModes.Primary and origCfg.FireModes.Primary.HoldRepeat ~= nil then
-                cfg.FireModes.Primary.HoldRepeat = origCfg.FireModes.Primary.HoldRepeat
-            end
+            if targetFireRate then cfg.FireModes.Primary.FireRate = targetFireRate end
+            if G.autoFire then cfg.FireModes.Primary.HoldRepeat = true end
             table.freeze(cfg.FireModes.Primary)
         end
         if type(cfg.FireModes.Secondary) == 'table' then
             if isreadonly(cfg.FireModes.Secondary) then setreadonly(cfg.FireModes.Secondary, false) end
-            if G.firerate and G.firerateValue then
-                cfg.FireModes.Secondary.FireRate = G.firerateValue
-            elseif origCfg.FireModes and origCfg.FireModes.Secondary and origCfg.FireModes.Secondary.FireRate ~= nil then
-                cfg.FireModes.Secondary.FireRate = origCfg.FireModes.Secondary.FireRate
-            end
-            if G.autoFire then
-                cfg.FireModes.Secondary.HoldRepeat = true
-            elseif origCfg.FireModes and origCfg.FireModes.Secondary and origCfg.FireModes.Secondary.HoldRepeat ~= nil then
-                cfg.FireModes.Secondary.HoldRepeat = origCfg.FireModes.Secondary.HoldRepeat
-            end
+            if targetFireRate then cfg.FireModes.Secondary.FireRate = targetFireRate end
+            if G.autoFire then cfg.FireModes.Secondary.HoldRepeat = true end
             table.freeze(cfg.FireModes.Secondary)
         end
         table.freeze(cfg.FireModes)
@@ -971,11 +1031,16 @@ local function patchLiveItem(item)
 
         local origCfg = WeaponEngine._originalConfigs[item.Name] or {}
 
-        if G.firerate and G.firerateValue then
-            props.FireRate = G.firerateValue
+        local targetFireRate
+        if G.customRpm and G.rpmValue and G.rpmValue > 0 then
+            targetFireRate = 60 / G.rpmValue
+        elseif G.firerate and G.firerateValue then
+            targetFireRate = G.firerateValue
         elseif origCfg.FireRate ~= nil then
-            props.FireRate = origCfg.FireRate
+            targetFireRate = origCfg.FireRate
         end
+
+        if targetFireRate then props.FireRate = targetFireRate end
 
         if G.autoFire then
             props.Automatic = true
@@ -987,22 +1052,14 @@ local function patchLiveItem(item)
             if isreadonly(props.FireModes) then setreadonly(props.FireModes, false) end
             if type(props.FireModes.Primary) == 'table' then
                 if isreadonly(props.FireModes.Primary) then setreadonly(props.FireModes.Primary, false) end
-                if G.firerate and G.firerateValue then
-                    props.FireModes.Primary.FireRate = G.firerateValue
-                end
-                if G.autoFire then
-                    props.FireModes.Primary.HoldRepeat = true
-                end
+                if targetFireRate then props.FireModes.Primary.FireRate = targetFireRate end
+                if G.autoFire then props.FireModes.Primary.HoldRepeat = true end
                 table.freeze(props.FireModes.Primary)
             end
             if type(props.FireModes.Secondary) == 'table' then
                 if isreadonly(props.FireModes.Secondary) then setreadonly(props.FireModes.Secondary, false) end
-                if G.firerate and G.firerateValue then
-                    props.FireModes.Secondary.FireRate = G.firerateValue
-                end
-                if G.autoFire then
-                    props.FireModes.Secondary.HoldRepeat = true
-                end
+                if targetFireRate then props.FireModes.Secondary.FireRate = targetFireRate end
+                if G.autoFire then props.FireModes.Secondary.HoldRepeat = true end
                 table.freeze(props.FireModes.Secondary)
             end
             table.freeze(props.FireModes)
@@ -1127,17 +1184,17 @@ end)
 
 -- ===================== SOFT PASTEL LIGHT BLUE THEME =====================
 local T = {
-    bg = Color3.fromRGB(240, 246, 252),          -- พื้นหลังหลัก ขาวฟ้าละมุน
-    panel = Color3.fromRGB(225, 235, 245),       -- พาเนลย่อย ฟ้าอ่อนนุ่มนวล (RGB 225 235 245)
-    card = Color3.fromRGB(255, 255, 255),        -- การ์ดเลือกสกิน ขาวสะอาด
-    stroke = Color3.fromRGB(190, 210, 230),      -- เส้นขอบเบาๆ
-    accent = Color3.fromRGB(120, 180, 235),      -- สีไฮไลท์ ฟ้าพาสเทลสดใส
-    accentBright = Color3.fromRGB(80, 150, 220),  -- สีฟ้าพาสเทลเข้ม
-    accentDim = Color3.fromRGB(205, 225, 245),   -- สีปุ่มเมื่อเลือก
-    text = Color3.fromRGB(45, 60, 80),           -- ตัวหนังสือ สีเทาดำนุ่มๆ อ่านง่าย
-    dim = Color3.fromRGB(120, 140, 165),         -- ตัวหนังสือรอง
-    off = Color3.fromRGB(200, 215, 230),         -- สวิตช์ตอนปิด
-    green = Color3.fromRGB(100, 200, 160),       -- สถานะเปิด / เลือกอยู่
+    bg = Color3.fromRGB(240, 246, 252),          
+    panel = Color3.fromRGB(225, 235, 245),       
+    card = Color3.fromRGB(255, 255, 255),        
+    stroke = Color3.fromRGB(190, 210, 230),      
+    accent = Color3.fromRGB(120, 180, 235),      
+    accentBright = Color3.fromRGB(80, 150, 220),  
+    accentDim = Color3.fromRGB(205, 225, 245),   
+    text = Color3.fromRGB(45, 60, 80),           
+    dim = Color3.fromRGB(120, 140, 165),         
+    off = Color3.fromRGB(200, 215, 230),         
+    green = Color3.fromRGB(100, 200, 160),       
 }
 
 local function corner(i, r) 
@@ -1208,7 +1265,7 @@ main.Parent = gui
 corner(main, 12)
 stroke(main, T.stroke, 1.5, 0)
 
--- Mobile Toggle UI สำหรับสลับการเปิด/ปิดหน้าจอ
+-- Mobile Toggle UI
 local mobileBtn = Instance.new("TextButton")
 mobileBtn.Name = "RebornMobileToggle"
 mobileBtn.Size = UDim2.new(0, 42, 0, 42)
@@ -1423,10 +1480,10 @@ resetBtn.Parent = right
 corner(resetBtn, 5)
 stroke(resetBtn, T.stroke, 1, 0.4)
 
--- SKIN GRID
+-- SKIN GRID (ปรับการจัดวางให้ลงตัวพอดีกรอบ)
 local skinGrid = Instance.new("ScrollingFrame")
-skinGrid.Size = UDim2.new(1, -16, 1, -48)
-skinGrid.Position = UDim2.new(0, 8, 0, 40)
+skinGrid.Size = UDim2.new(1, -12, 1, -44)
+skinGrid.Position = UDim2.new(0, 6, 0, 38)
 skinGrid.BackgroundTransparency = 1
 skinGrid.BorderSizePixel = 0
 skinGrid.ScrollBarThickness = 3
@@ -1436,8 +1493,8 @@ skinGrid.CanvasSize = UDim2.new()
 skinGrid.Parent = right
 
 local grid = Instance.new("UIGridLayout")
-grid.CellSize = UDim2.new(0, 125, 0, 95)
-grid.CellPadding = UDim2.new(0, 8, 0, 8)
+grid.CellSize = UDim2.new(0, 118, 0, 90)
+grid.CellPadding = UDim2.new(0, 6, 0, 6)
 grid.SortOrder = Enum.SortOrder.LayoutOrder
 grid.Parent = skinGrid
 
@@ -1620,16 +1677,18 @@ eg.CellPadding = UDim2.new(0, 6, 0, 6)
 eg.Parent = espGrid
 
 toggle(espGrid, "ESP Enabled", "enabled", 140, nil, E)
-toggle(espGrid, "Boxes", "boxes", 140, nil, E)
+toggle(espGrid, "Box", "boxes", 140, nil, E)
 toggle(espGrid, "Skeleton", "skeleton", 140, nil, E)
 toggle(espGrid, "Names", "names", 140, nil, E)
 toggle(espGrid, "Health bar", "health", 140, nil, E)
 toggle(espGrid, "Distance", "distance", 140, nil, E)
 toggle(espGrid, "Weapon", "weapon", 140, nil, E)
-toggle(espGrid, "Tracers", "tracers", 140, nil, E)
+toggle(espGrid, "Tracer", "tracers", 140, nil, E)
+toggle(espGrid, "LookVetor", "lookVector", 140, nil, E)
+toggle(espGrid, "HeadDot", "headDot", 140, nil, E)
 toggle(espGrid, "Show team", "showTeam", 140, nil, E)
 
-slider(espPage, "Max distance", E, "maxDist", 200, 5000, 50, UDim2.new(0, 10, 0, 185), 320)
+slider(espPage, "Max distance", E, "maxDist", 200, 5000, 50, UDim2.new(0, 10, 0, 215), 320)
 
 -- SILENT AIM Page
 local aimPage = Instance.new("Frame")
@@ -1702,11 +1761,13 @@ gmg.CellPadding = UDim2.new(0, 6, 0, 6)
 gmg.Parent = gmGrid
 
 toggle(gmGrid, "Rapid Fire", "firerate", 140, nil, G)
+toggle(gmGrid, "Custom RPM", "customRpm", 140, nil, G)
 toggle(gmGrid, "Full Auto", "autoFire", 140, nil, G)
 toggle(gmGrid, "No Recoil", "noRecoil", 140, nil, G)
 toggle(gmGrid, "No Spread", "noSpread", 140, nil, G)
 
-slider(gunModPage, "Fire Delay (Sec)", G, "firerateValue", 0.01, 0.2, 0.01, UDim2.new(0, 10, 0, 125), 320)
+slider(gunModPage, "Fire Delay (Sec)", G, "firerateValue", 0.01, 0.2, 0.01, UDim2.new(0, 10, 0, 115), 320)
+slider(gunModPage, "Custom RPM Value", G, "rpmValue", 100, 3000, 50, UDim2.new(0, 10, 0, 160), 320)
 
 -- MISC Page
 local miscPage = Instance.new("Frame")
@@ -1796,11 +1857,11 @@ local function buildSkins(weapon)
         
         local cardStroke = stroke(card, isSelected and T.accentBright or T.stroke, isSelected and 1.5 or 1, isSelected and 0 or 0.4)
 
-        iconImage(card, s.icon, UDim2.new(1, -12, 0, 48)).Position = UDim2.new(0, 6, 0, 6)
+        iconImage(card, s.icon, UDim2.new(1, -10, 0, 44)).Position = UDim2.new(0, 5, 0, 5)
         
         local nm = label(card, s.name, 10, isSelected and T.accentBright or T.text, MAIN_FONT)
-        nm.Size = UDim2.new(1, -8, 0, 28) 
-        nm.Position = UDim2.new(0, 4, 1, -30) 
+        nm.Size = UDim2.new(1, -6, 0, 26) 
+        nm.Position = UDim2.new(0, 3, 1, -28) 
         nm.TextXAlignment = Enum.TextXAlignment.Center 
         nm.TextWrapped = true
 
