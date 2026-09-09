@@ -1,5 +1,5 @@
 -- ============================================================
--- REBORN CS2 THEME - SOFT PASTEL LIGHT BLUE EDITION (CLEAN & MODERN)
+-- REBORN 67776667
 -- ============================================================
 
 pcall(function() 
@@ -33,7 +33,7 @@ local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 local LP = Players.LocalPlayer
 
--- ใช้ฟอนต์หลักเป็น Cartoon
+-- Cartoon
 local MAIN_FONT = Enum.Font.SourceSansBold
 
 local function safeRequire(mod)
@@ -444,8 +444,14 @@ for k, v in pairs(AIM_DEF) do if A[k] == nil then A[k] = v end end
 -- ===================== GUN MODS CONFIG =====================
 CFG.gunmod = type(CFG.gunmod) == "table" and CFG.gunmod or {}
 local G = CFG.gunmod
-local GUNMOD_DEF = { firerate = false, firerateValue = 0.05, autoFire = false }
+local GUNMOD_DEF = { firerate = false, firerateValue = 0.05, autoFire = false, noRecoil = false, noSpread = false }
 for k, v in pairs(GUNMOD_DEF) do if G[k] == nil then G[k] = v end end
+
+-- ===================== MISC CONFIG =====================
+CFG.misc = type(CFG.misc) == "table" and CFG.misc or {}
+local M = CFG.misc
+local MISC_DEF = { specterChecked = false, noFlash = false, noSmoke = false }
+for k, v in pairs(MISC_DEF) do if M[k] == nil then M[k] = v end end
 
 local COL_ENEMY = Color3.fromRGB(135, 206, 235)
 local COL_TEAM = Color3.fromRGB(135, 206, 235)
@@ -626,6 +632,97 @@ local function espFrame()
     for plr, s in pairs(pool) do 
         if plr.Parent ~= Players then removeSet(s) pool[plr] = nil end 
     end
+end
+
+-- ===================== SPECTATOR CHECKER MODULE =====================
+local SpectateChecker = {}
+local specLabel = nil
+local specGuiInstance = nil
+
+local function getGuiParent()
+    if type(gethui) == "function" then
+        local ok, h = pcall(gethui)
+        if ok and h then return h end
+    end
+    local ok, cg = pcall(function() return game:GetService("CoreGui") end)
+    if ok and cg then return cg end
+    return LP and LP:FindFirstChild("PlayerGui")
+end
+
+function SpectateChecker.init()
+    local parent = getGuiParent()
+    if not parent then return nil end
+
+    pcall(function()
+        local existing = parent:FindFirstChild("AG_SpectatorUI")
+        if existing then existing:Destroy() end
+
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "AG_SpectatorUI"
+        gui.ResetOnSpawn = false
+        gui.DisplayOrder = 1000000
+        gui.Parent = parent
+        specGuiInstance = gui
+
+        local frame = Instance.new("Frame")
+        frame.Name = "SpectatorCard"
+        frame.Size = UDim2.new(0, 190, 0, 32)
+        frame.Position = UDim2.new(0.5, -95, 0.05, 0)
+        frame.BackgroundColor3 = Color3.fromRGB(240, 246, 252)
+        frame.BackgroundTransparency = 0.1
+        frame.BorderSizePixel = 0
+        frame.Visible = false
+        frame.Parent = gui
+
+        local c = Instance.new("UICorner")
+        c.CornerRadius = UDim.new(0, 8)
+        c.Parent = frame
+
+        local s = Instance.new("UIStroke")
+        s.Color = Color3.fromRGB(120, 180, 235)
+        s.Thickness = 1.2
+        s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        s.Parent = frame
+
+        specLabel = Instance.new("TextLabel")
+        specLabel.Name = "SpectatorCount"
+        specLabel.Size = UDim2.new(1, 0, 1, 0)
+        specLabel.BackgroundTransparency = 1
+        specLabel.Font = MAIN_FONT
+        specLabel.TextSize = 13
+        specLabel.TextColor3 = Color3.fromRGB(45, 60, 80)
+        specLabel.Text = ""
+        specLabel.Parent = frame
+    end)
+
+    return specLabel
+end
+
+function SpectateChecker.update()
+    if not specGuiInstance then SpectateChecker.init() end
+    local card = specGuiInstance and specGuiInstance:FindFirstChild("SpectatorCard")
+    if not card or not specLabel then return end
+
+    if M.specterChecked then
+        local specCount = LP:GetAttribute("Spectators") or 0
+        if specCount > 0 then
+            card.Visible = true
+            specLabel.Text = string.format("👁️ Spectating You: %d", specCount)
+        else
+            card.Visible = false
+            specLabel.Text = ""
+        end
+    else
+        card.Visible = false
+    end
+end
+
+function SpectateChecker.cleanup()
+    if specGuiInstance then
+        pcall(function() specGuiInstance:Destroy() end)
+        specGuiInstance = nil
+    end
+    specLabel = nil
 end
 
 -- ===================== SILENT AIM LOGIC =====================
@@ -1025,6 +1122,7 @@ WeaponEngine.init()
 local espConn = RunService.RenderStepped:Connect(function()
     pcall(silentAimFrame)
     pcall(espFrame)
+    pcall(SpectateChecker.update)
 end)
 
 -- ===================== SOFT PASTEL LIGHT BLUE THEME =====================
@@ -1210,9 +1308,9 @@ navLayout.Parent = navBar
 local pageTabs, currentPage = {}, "skins"
 local setPage
 
-for _, nm in ipairs({ "SKINS", "ESP", "Silent", "GUN MODS" }) do
+for _, nm in ipairs({ "SKINS", "ESP", "Silent", "GUN MODS", "MISC" }) do
     local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0.23, 0, 0, 24)
+    b.Size = UDim2.new(0.18, 0, 0, 24)
     b.BackgroundColor3 = T.card
     b.BackgroundTransparency = 0
     b.Text = nm
@@ -1261,7 +1359,7 @@ local pad = Instance.new("UIPadding")
 pad.PaddingLeft = UDim.new(0, 8) 
 pad.Parent = search
 
--- CATEGORY BAR (ปรับระยะขอบให้ลงมาพอดี ไม่ชิดบน ไม่ชิดซ้าย และกว้างพอดีฝั่งขวา)
+-- CATEGORY BAR
 local catBar = Instance.new("ScrollingFrame")
 catBar.Size = UDim2.new(1, -12, 0, 26)
 catBar.Position = UDim2.new(0, 6, 0, 38)
@@ -1588,7 +1686,7 @@ local gmTitle = label(gunModPage, "Gun Modifications", 13, T.text, MAIN_FONT)
 gmTitle.Size = UDim2.new(1, -20, 0, 22) 
 gmTitle.Position = UDim2.new(0, 10, 0, 4)
 
-local gmSub = label(gunModPage, "Modify weapon firerate and automatic behavior.", 10, T.dim) 
+local gmSub = label(gunModPage, "Modify weapon firerate, automatic behavior, recoil and spread.", 10, T.dim) 
 gmSub.Size = UDim2.new(1, -20, 0, 12) 
 gmSub.Position = UDim2.new(0, 10, 0, 22)
 
@@ -1605,8 +1703,51 @@ gmg.Parent = gmGrid
 
 toggle(gmGrid, "Rapid Fire", "firerate", 140, nil, G)
 toggle(gmGrid, "Full Auto", "autoFire", 140, nil, G)
+toggle(gmGrid, "No Recoil", "noRecoil", 140, nil, G)
+toggle(gmGrid, "No Spread", "noSpread", 140, nil, G)
 
 slider(gunModPage, "Fire Delay (Sec)", G, "firerateValue", 0.01, 0.2, 0.01, UDim2.new(0, 10, 0, 125), 320)
+
+-- MISC Page
+local miscPage = Instance.new("Frame")
+miscPage.Size = UDim2.new(1, -20, 1, -86)
+miscPage.Position = UDim2.new(0, 10, 0, 44)
+miscPage.BackgroundColor3 = T.panel
+miscPage.BackgroundTransparency = 0
+miscPage.BorderSizePixel = 0
+miscPage.Visible = false
+miscPage.Parent = main
+corner(miscPage, 8)
+stroke(miscPage, T.stroke, 1, 0.3)
+
+local miscTitle = label(miscPage, "Miscellaneous", 13, T.text, MAIN_FONT) 
+miscTitle.Size = UDim2.new(1, -20, 0, 22) 
+miscTitle.Position = UDim2.new(0, 10, 0, 4)
+
+local miscSub = label(miscPage, "Utility indicators and visual effect modifications.", 10, T.dim) 
+miscSub.Size = UDim2.new(1, -20, 0, 12) 
+miscSub.Position = UDim2.new(0, 10, 0, 22)
+
+local miscGrid = Instance.new("Frame")
+miscGrid.Size = UDim2.new(1, -20, 0, 100)
+miscGrid.Position = UDim2.new(0, 10, 0, 42)
+miscGrid.BackgroundTransparency = 1
+miscGrid.Parent = miscPage
+
+local mg = Instance.new("UIGridLayout") 
+mg.CellSize = UDim2.new(0, 160, 0, 28) 
+mg.CellPadding = UDim2.new(0, 6, 0, 6) 
+mg.Parent = miscGrid
+
+toggle(miscGrid, "Specter Checked", "specterChecked", 155, function(val)
+    if val then
+        SpectateChecker.init()
+    else
+        SpectateChecker.cleanup()
+    end
+end, M)
+toggle(miscGrid, "No Flash", "noFlash", 155, nil, M)
+toggle(miscGrid, "No Smoke", "noSmoke", 155, nil, M)
 
 -- Skins Logic UI
 local selectedWeapon = nil
@@ -1844,6 +1985,7 @@ local function applyPageVisibility()
     espPage.Visible = (currentPage == "esp") and not collapsed
     aimPage.Visible = (currentPage == "silent") and not collapsed
     gunModPage.Visible = (currentPage == "gun mods") and not collapsed
+    miscPage.Visible = (currentPage == "misc") and not collapsed
     navBar.Visible = not collapsed
     
     for nm, b in pairs(pageTabs) do
@@ -1890,6 +2032,7 @@ _G.RebornUnload = function()
         _G.__originalPerformRaycast = nil
     end
     WeaponEngine.cleanup()
+    SpectateChecker.cleanup()
     pcall(function() inputConn:Disconnect() end)
     pcall(function() espConn:Disconnect() end)
     for _, s in pairs(pool) do removeSet(s) end
@@ -1898,4 +2041,86 @@ _G.RebornUnload = function()
     pcall(fovC.Remove, fovC)
     pcall(function() gui:Destroy() end)
     _G.RebornUnload = nil
+end
+
+-- ============================================================
+-- LOGIC: NO RECOIL / NO SPREAD / NO FLASH / NO SMOKE HOOKS
+-- ============================================================
+
+for _, obj in next, getgc(true) do  
+    -- 1. NO RECOIL
+    if type(obj) == "table" and rawget(obj, "setWeaponRecoil") then
+        pcall(function()
+            local oldSetWeaponRecoil
+            oldSetWeaponRecoil = hookfunction(obj.setWeaponRecoil, function(...)
+                if G.noRecoil then
+                    return
+                end
+                return oldSetWeaponRecoil(...)
+            end)
+        end)
+    end
+
+    if type(obj) == "function" and debug.getinfo(obj).name == "calculateRecoilOffset" then
+        pcall(function()
+            local calculateRecoilOffset
+            calculateRecoilOffset = hookfunction(obj, function(...) 
+                if G.noRecoil then
+                    return UDim2.new() 
+                end
+                return calculateRecoilOffset(...)
+            end)
+        end)
+    end 
+
+    if type(obj) == "table" and rawget(obj, "weaponKick") then
+        pcall(function()
+            local oldweaponkick
+            oldweaponkick = hookfunction(obj.weaponKick, function(p1,p2)
+                if G.noRecoil then
+                    return
+                end
+                return oldweaponkick(p1,p2)
+            end)
+        end)
+    end 
+    
+    -- 2. NO SPREAD
+    if type(obj) == "table" and rawget(obj, "getTrueSpread") then
+        pcall(function()
+            local oldgettruespread
+            oldgettruespread = hookfunction(obj.getTrueSpread, function(p1)  
+                if G.noSpread then
+                    return 0
+                end
+                return oldgettruespread(p1)
+            end)
+        end)
+    end
+
+    -- 3. NO FLASH
+    if type(obj) == "function" and debug.getinfo(obj).name == "Flash" then
+        pcall(function()
+            local oldflash
+            oldflash = hookfunction(obj, function(...)
+                if M.noFlash then
+                    return
+                end
+                return oldflash(...)
+            end)
+        end)
+    end 
+
+    -- 4. NO SMOKE
+    if type(obj) == "function" and debug.getinfo(obj).name == "CreateVoxel" and debug.getupvalue(obj, 1) and tostring(debug.getupvalue(obj, 1)) == "Smoke" then
+        pcall(function()
+            local oldsmoke
+            oldsmoke = hookfunction(obj, function(...) 
+                if M.noSmoke then
+                    return
+                end
+                return oldsmoke(...)
+            end) 
+        end)
+    end
 end
