@@ -1,5 +1,5 @@
 -- ============================================================
--- REBORN CS2 THEME - SOFT PASTEL (LIGHT BLUE / PURPLE EDITION)
+-- REBORN CS2 THEME - SOFT PASTEL LIGHT BLUE EDITION (CLEAN & MODERN)
 -- ============================================================
 
 pcall(function() 
@@ -31,10 +31,9 @@ local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
 local LP = Players.LocalPlayer
 
--- เปลี่ยนฟอนต์หลักเป็น Cartoon ตามความต้องการ
+-- ใช้ฟอนต์หลักเป็น Cartoon
 local MAIN_FONT = Enum.Font.SourceSansBold
 
 local function safeRequire(mod)
@@ -315,7 +314,6 @@ local function updateLiveInventory()
     local ld = getActiveLoadout()
     if not ld or not ld.Inventory then return end
 
-    -- 1. Update All Weapons
     for slotIdx = 1, 3 do
         local slotData = ld.Inventory[slotIdx]
         if slotData and slotData._items and slotData._items[1] then
@@ -392,7 +390,6 @@ local function updateLiveInventory()
         end
     end
 
-    -- 2. Update Gloves Realtime
     local gloveSlot = ld.Inventory[7] or ld.Inventory[6] or ld.Inventory["Gloves"]
     if gloveSlot and gloveSlot._items and gloveSlot._items[1] then
         local gloveItem = gloveSlot._items[1]
@@ -591,7 +588,7 @@ local function espFrame()
                     local ratio = math.clamp((hp or maxHp) / math.max(maxHp, 1), 0, 1)
                     s.hpBg.Position = Vector2.new(x1 - 6, y1 - 1) s.hpBg.Size = Vector2.new(4, h + 2)
                     s.hp.Position = Vector2.new(x1 - 5, y1 + h * (1 - ratio)) s.hp.Size = Vector2.new(2, h * ratio)
-                    s.hp.Color = Color3.fromRGB(180, 160, 255):Lerp(Color3.fromRGB(135, 206, 250), ratio)
+                    s.hp.Color = Color3.fromRGB(180, 220, 255):Lerp(Color3.fromRGB(135, 206, 250), ratio)
                 end
                 
                 s.tracer.Visible = E.tracers
@@ -633,7 +630,7 @@ end
 
 -- ===================== SILENT AIM LOGIC =====================
 local COLOR_FOV_BASE = Color3.fromRGB(135, 206, 235)
-local COLOR_FOV_LOCKED = Color3.fromRGB(0, 255, 100)
+local COLOR_FOV_LOCKED = Color3.fromRGB(0, 255, 150)
 
 local fovO = D("Circle", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.5, NumSides = 64, Filled = false })
 local fovC = D("Circle", { Thickness = 1.5, Transparency = 0.9, NumSides = 64, Filled = false, Color = COLOR_FOV_BASE })
@@ -1030,48 +1027,20 @@ local espConn = RunService.RenderStepped:Connect(function()
     pcall(espFrame)
 end)
 
--- ===================== LIGHT BLUE & PURPLE THEME =====================
+-- ===================== SOFT PASTEL LIGHT BLUE THEME =====================
 local T = {
-    bg = Color3.fromRGB(0, 0, 0),
-    panel = Color3.fromRGB(0, 0, 0),
-    card = Color3.fromRGB(0, 0, 0),
-    stroke = Color3.fromRGB(0, 0, 0),
-    accent = Color3.fromRGB(255, 255, 255),
-    accentBright = Color3.fromRGB(135, 206, 235),
-    accentDim = Color3.fromRGB(0, 0, 0),
-    text = Color3.fromRGB(255, 255, 255),
-    dim = Color3.fromRGB(255, 255, 255),
-    off = Color3.fromRGB(35, 35, 55),
-    green = Color3.fromRGB(135, 206, 235),
+    bg = Color3.fromRGB(240, 246, 252),          -- พื้นหลังหลัก ขาวฟ้าละมุน
+    panel = Color3.fromRGB(225, 235, 245),       -- พาเนลย่อย ฟ้าอ่อนนุ่มนวล
+    card = Color3.fromRGB(255, 255, 255),        -- การ์ดเลือกสกิน ขาวสะอาด
+    stroke = Color3.fromRGB(190, 210, 230),      -- เส้นขอบเบาๆ
+    accent = Color3.fromRGB(120, 180, 235),      -- สีไฮไลท์ ฟ้าพาสเทลสดใส
+    accentBright = Color3.fromRGB(80, 150, 220),  -- สีฟ้าพาสเทลเข้ม
+    accentDim = Color3.fromRGB(205, 225, 245),   -- สีปุ่มเมื่อเลือก
+    text = Color3.fromRGB(45, 60, 80),           -- ตัวหนังสือ สีเทาดำนุ่มๆ อ่านง่าย
+    dim = Color3.fromRGB(120, 140, 165),         -- ตัวหนังสือรอง
+    off = Color3.fromRGB(200, 215, 230),         -- สวิตช์ตอนปิด
+    green = Color3.fromRGB(100, 200, 160),       -- สถานะเปิด / เลือกอยู่
 }
-
-local animatedGradients = {}
-
-local function applyGradient3Color(parent)
-    local grad = Instance.new("UIGradient")
-    grad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(120, 200, 220)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(80, 200, 220))
-    })
-    grad.Rotation = 0
-    grad.Parent = parent
-    table.insert(animatedGradients, grad)
-    return grad
-end
-
-task.spawn(function()
-    while true do
-        for deg = 0, 360, 2 do
-            for _, g in ipairs(animatedGradients) do
-                if g and g.Parent then
-                    g.Rotation = deg
-                end
-            end
-            task.wait(0.03)
-        end
-    end
-end)
 
 local function corner(i, r) 
     local c = Instance.new("UICorner") 
@@ -1084,7 +1053,7 @@ local function stroke(i, col, th, trans)
     local s = Instance.new("UIStroke")
     s.Color = col or T.stroke
     s.Thickness = th or 1.2
-    s.Transparency = trans or 0.3
+    s.Transparency = trans or 0.2
     s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     s.Parent = i
     return s
@@ -1131,24 +1100,17 @@ gui.DisplayOrder = 1000
 gui.Parent = hui
 
 local main = Instance.new("Frame")
-main.Size = UDim2.new(0, 620, 0, 420)
-main.Position = UDim2.new(0.5, -310, 0.5, -210)
+main.Size = UDim2.new(0, 640, 0, 430)
+main.Position = UDim2.new(0.5, -320, 0.5, -215)
 main.BackgroundColor3 = T.bg
 main.BackgroundTransparency = 0
 main.BorderSizePixel = 0
 main.Active = true
 main.Parent = gui
-corner(main, 10)
+corner(main, 12)
+stroke(main, T.stroke, 1.5, 0)
 
-local mainGlow = stroke(main, T.accent, 2, 0)
-applyGradient3Color(mainGlow)
-
-local isMobile = UIS.TouchEnabled and not UIS.KeyboardEnabled
-if isMobile then
-    main.Size = UDim2.new(0, 540, 0, 360)
-    main.Position = UDim2.new(0.5, -270, 0.5, -180)
-end
-
+-- Mobile Toggle UI สำหรับสลับการเปิด/ปิดหน้าจอ
 local mobileBtn = Instance.new("TextButton")
 mobileBtn.Name = "RebornMobileToggle"
 mobileBtn.Size = UDim2.new(0, 42, 0, 42)
@@ -1157,15 +1119,13 @@ mobileBtn.BackgroundColor3 = T.panel
 mobileBtn.BackgroundTransparency = 0
 mobileBtn.Text = "R"
 mobileBtn.TextColor3 = T.accentBright
-mobileBtn.TextSize = 13
+mobileBtn.TextSize = 16
 mobileBtn.Font = MAIN_FONT
 mobileBtn.Active = true
 mobileBtn.Draggable = true
 mobileBtn.Parent = gui
 corner(mobileBtn, 21)
-
-local mbStroke = stroke(mobileBtn, T.accent, 2, 0)
-applyGradient3Color(mbStroke)
+stroke(mobileBtn, T.accent, 1.5, 0)
 
 mobileBtn.MouseButton1Click:Connect(function() 
     main.Visible = not main.Visible 
@@ -1177,7 +1137,7 @@ top.BackgroundColor3 = T.panel
 top.BackgroundTransparency = 0
 top.BorderSizePixel = 0
 top.Parent = main
-corner(top, 10)
+corner(top, 12)
 
 local topFix = Instance.new("Frame")
 topFix.Size = UDim2.new(1, 0, 0, 10)
@@ -1188,35 +1148,20 @@ topFix.BorderSizePixel = 0
 topFix.Parent = top
 
 local dot = Instance.new("Frame")
-dot.Size = UDim2.new(0, 8, 0, 8)
-dot.Position = UDim2.new(0, 12, 0.5, -4)
-dot.BackgroundColor3 = T.accent
+dot.Size = UDim2.new(0, 10, 0, 10)
+dot.Position = UDim2.new(0, 12, 0.5, -5)
+dot.BackgroundColor3 = T.accentBright
 dot.BorderSizePixel = 0
 dot.Parent = top
-corner(dot, 4)
-applyGradient3Color(dot)
+corner(dot, 5)
 
-local ttl = label(top, "Defer", 16, T.text, MAIN_FONT)
-ttl.Size = UDim2.new(0, 80, 1, 0)
-ttl.Position = UDim2.new(0, 26, 0, 0)
-
-local ttl2 = label(top, "", 18, T.accentBright, MAIN_FONT)
-ttl2.Size = UDim2.new(0, 30, 1, 0)
-ttl2.Position = UDim2.new(0, 95, 0, 0)
-
-local status = label(top, "", 11, T.dim)
-status.Size = UDim2.new(0, 160, 1, 0)
-status.Position = UDim2.new(1, -190, 0, 0)
-status.TextXAlignment = Enum.TextXAlignment.Right
-
-local function setStatus(t, col) 
-    status.Text = t 
-    status.TextColor3 = col or T.dim 
-end
+local ttl = label(top, "REBORN CS2", 15, T.text, MAIN_FONT)
+ttl.Size = UDim2.new(0, 120, 1, 0)
+ttl.Position = UDim2.new(0, 28, 0, 0)
 
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 22, 0, 22)
-closeBtn.Position = UDim2.new(1, -28, 0.5, -11)
+closeBtn.Size = UDim2.new(0, 24, 0, 24)
+closeBtn.Position = UDim2.new(1, -30, 0.5, -12)
 closeBtn.BackgroundColor3 = T.card
 closeBtn.BackgroundTransparency = 0
 closeBtn.Text = "–"
@@ -1224,8 +1169,8 @@ closeBtn.TextColor3 = T.text
 closeBtn.TextSize = 14
 closeBtn.Font = MAIN_FONT
 closeBtn.Parent = top
-corner(closeBtn, 5)
-stroke(closeBtn, T.stroke, 1, 0.5)
+corner(closeBtn, 6)
+stroke(closeBtn, T.stroke, 1, 0.3)
 
 do
     local dragging, start, startPos
@@ -1246,18 +1191,18 @@ do
 end
 
 local navBar = Instance.new("Frame")
-navBar.Size = UDim2.new(1, -20, 0, 30)
-navBar.Position = UDim2.new(0, 10, 1, -36)
+navBar.Size = UDim2.new(1, -20, 0, 32)
+navBar.Position = UDim2.new(0, 10, 1, -38)
 navBar.BackgroundColor3 = T.panel
 navBar.BackgroundTransparency = 0
 navBar.BorderSizePixel = 0
 navBar.Parent = main
-corner(navBar, 6)
-stroke(navBar, T.stroke, 1, 0.5)
+corner(navBar, 8)
+stroke(navBar, T.stroke, 1, 0.3)
 
 local navLayout = Instance.new("UIListLayout")
 navLayout.FillDirection = Enum.FillDirection.Horizontal
-navLayout.Padding = UDim.new(0, 4)
+navLayout.Padding = UDim.new(0, 6)
 navLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 navLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 navLayout.Parent = navBar
@@ -1267,18 +1212,17 @@ local setPage
 
 for _, nm in ipairs({ "SKINS", "ESP", "Silent", "GUN MODS" }) do
     local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0.23, 0, 0, 22)
+    b.Size = UDim2.new(0.23, 0, 0, 24)
     b.BackgroundColor3 = T.card
     b.BackgroundTransparency = 0
     b.Text = nm
     b.TextColor3 = T.dim
-    b.TextSize = 10
+    b.TextSize = 11
     b.Font = MAIN_FONT
     b.AutoButtonColor = false
     b.Parent = navBar
-    corner(b, 5)
-    local bStroke = stroke(b, T.accent, 1, 0.5)
-    applyGradient3Color(bStroke)
+    corner(b, 6)
+    stroke(b, T.stroke, 1, 0.4)
     
     b.MouseButton1Click:Connect(function() 
         if setPage then setPage(nm:lower()) end 
@@ -1287,21 +1231,21 @@ for _, nm in ipairs({ "SKINS", "ESP", "Silent", "GUN MODS" }) do
 end
 
 local left = Instance.new("Frame")
-left.Size = isMobile and UDim2.new(0, 150, 1, -82) or UDim2.new(0, 170, 1, -82)
+left.Size = UDim2.new(0, 180, 1, -86)
 left.Position = UDim2.new(0, 10, 0, 44)
 left.BackgroundColor3 = T.panel
 left.BackgroundTransparency = 0
 left.BorderSizePixel = 0
 left.Parent = main
 corner(left, 8)
-stroke(left, T.stroke, 1, 0.5)
+stroke(left, T.stroke, 1, 0.3)
 
 local search = Instance.new("TextBox")
-search.Size = UDim2.new(1, -12, 0, 24)
+search.Size = UDim2.new(1, -12, 0, 26)
 search.Position = UDim2.new(0, 6, 0, 6)
 search.BackgroundColor3 = T.card
 search.BackgroundTransparency = 0
-search.PlaceholderText = "Search..."
+search.PlaceholderText = "Search Weapon..."
 search.PlaceholderColor3 = T.dim
 search.Text = ""
 search.TextColor3 = T.text
@@ -1310,17 +1254,17 @@ search.Font = MAIN_FONT
 search.ClearTextOnFocus = false
 search.TextXAlignment = Enum.TextXAlignment.Left
 search.Parent = left
-corner(search, 5)
-stroke(search, T.stroke, 1, 0.6)
+corner(search, 6)
+stroke(search, T.stroke, 1, 0.4)
 
 local pad = Instance.new("UIPadding") 
-pad.PaddingLeft = UDim.new(0, 6) 
+pad.PaddingLeft = UDim.new(0, 8) 
 pad.Parent = search
 
--- ปรับปรุงขนาดและระยะของ Category Bar
+-- CATEGORY BAR (ปรับระยะขอบให้ลงมาพอดี ไม่ชิดบน ไม่ชิดซ้าย และกว้างพอดีฝั่งขวา)
 local catBar = Instance.new("ScrollingFrame")
-catBar.Size = UDim2.new(1, -12, 0, 24)
-catBar.Position = UDim2.new(0, 6, 0, 34)
+catBar.Size = UDim2.new(1, -12, 0, 26)
+catBar.Position = UDim2.new(0, 6, 0, 38)
 catBar.BackgroundTransparency = 1
 catBar.BorderSizePixel = 0
 catBar.ScrollBarThickness = 0
@@ -1331,61 +1275,60 @@ catBar.Parent = left
 
 local catLayout = Instance.new("UIListLayout") 
 catLayout.FillDirection = Enum.FillDirection.Horizontal 
-catLayout.Padding = UDim.new(0, 4) 
+catLayout.Padding = UDim.new(0, 5) 
 catLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 catLayout.Parent = catBar
 
--- ปรับความสูงและตำแหน่งของรายการอาวุธ
 local wepList = Instance.new("ScrollingFrame")
-wepList.Size = UDim2.new(1, -12, 1, -70)
-wepList.Position = UDim2.new(0, 6, 0, 64)
+wepList.Size = UDim2.new(1, -12, 1, -74)
+wepList.Position = UDim2.new(0, 6, 0, 68)
 wepList.BackgroundTransparency = 1
 wepList.BorderSizePixel = 0
-wepList.ScrollBarThickness = 2
+wepList.ScrollBarThickness = 3
 wepList.ScrollBarImageColor3 = T.accent
 wepList.AutomaticCanvasSize = Enum.AutomaticSize.Y
 wepList.CanvasSize = UDim2.new()
 wepList.Parent = left
 
 local wepLayout = Instance.new("UIListLayout") 
-wepLayout.Padding = UDim.new(0, 3) 
+wepLayout.Padding = UDim.new(0, 4) 
 wepLayout.Parent = wepList
 
 local right = Instance.new("Frame")
-right.Size = isMobile and UDim2.new(1, -174, 1, -82) or UDim2.new(1, -196, 1, -82)
-right.Position = isMobile and UDim2.new(0, 164, 0, 44) or UDim2.new(0, 186, 0, 44)
+right.Size = UDim2.new(1, -206, 1, -86)
+right.Position = UDim2.new(0, 196, 0, 44)
 right.BackgroundColor3 = T.panel
 right.BackgroundTransparency = 0
 right.BorderSizePixel = 0
 right.Parent = main
 corner(right, 8)
-stroke(right, T.stroke, 1, 0.5)
+stroke(right, T.stroke, 1, 0.3)
 
-local rTitle = label(right, "Select weapon", 12, T.text, MAIN_FONT) 
+local rTitle = label(right, "Select weapon", 13, T.text, MAIN_FONT) 
 rTitle.Size = UDim2.new(1, -90, 0, 22) 
-rTitle.Position = UDim2.new(0, 8, 0, 4)
+rTitle.Position = UDim2.new(0, 10, 0, 4)
 
 local rSub = label(right, "", 10, T.dim) 
 rSub.Size = UDim2.new(1, -90, 0, 12) 
-rSub.Position = UDim2.new(0, 8, 0, 24)
+rSub.Position = UDim2.new(0, 10, 0, 24)
 
 local resetBtn = Instance.new("TextButton")
-resetBtn.Size = UDim2.new(0, 60, 0, 22)
-resetBtn.Position = UDim2.new(1, -68, 0, 8)
+resetBtn.Size = UDim2.new(0, 65, 0, 22)
+resetBtn.Position = UDim2.new(1, -75, 0, 8)
 resetBtn.BackgroundColor3 = T.card
 resetBtn.BackgroundTransparency = 0
-resetBtn.Text = "Reset"
+resetBtn.Text = "Reset Skin"
 resetBtn.TextColor3 = T.dim
 resetBtn.TextSize = 10
 resetBtn.Font = MAIN_FONT
 resetBtn.Parent = right
 corner(resetBtn, 5)
-stroke(resetBtn, T.stroke, 1, 0.6)
+stroke(resetBtn, T.stroke, 1, 0.4)
 
--- ปรับปรุงขนาดและพื้นที่ Grid เลือกสกินเพื่อไม่ให้ตกขอบ
+-- SKIN GRID
 local skinGrid = Instance.new("ScrollingFrame")
-skinGrid.Size = UDim2.new(1, -16, 1, -46)
-skinGrid.Position = UDim2.new(0, 8, 0, 38)
+skinGrid.Size = UDim2.new(1, -16, 1, -48)
+skinGrid.Position = UDim2.new(0, 8, 0, 40)
 skinGrid.BackgroundTransparency = 1
 skinGrid.BorderSizePixel = 0
 skinGrid.ScrollBarThickness = 3
@@ -1395,35 +1338,34 @@ skinGrid.CanvasSize = UDim2.new()
 skinGrid.Parent = right
 
 local grid = Instance.new("UIGridLayout")
-grid.CellSize = isMobile and UDim2.new(0, 105, 0, 78) or UDim2.new(0, 120, 0, 82)
-grid.CellPadding = UDim2.new(0, 6, 0, 6)
+grid.CellSize = UDim2.new(0, 125, 0, 95)
+grid.CellPadding = UDim2.new(0, 8, 0, 8)
 grid.SortOrder = Enum.SortOrder.LayoutOrder
 grid.Parent = skinGrid
 
 local function toggle(parent, text, key, w, onChange, tbl)
     local CFG_TARGET = tbl or CFG
     local row = Instance.new("TextButton")
-    row.Size = UDim2.new(0, w or 120, 0, 26)
+    row.Size = UDim2.new(0, w or 120, 0, 28)
     row.BackgroundColor3 = T.card
     row.BackgroundTransparency = 0
     row.Text = ""
     row.AutoButtonColor = false
     row.Parent = parent
-    corner(row, 5)
-    local rowStroke = stroke(row, T.stroke, 1, 0.7)
+    corner(row, 6)
+    local rowStroke = stroke(row, T.stroke, 1, 0.4)
 
     local l = label(row, text, 10) 
     l.Size = UDim2.new(1, -36, 1, 0) 
-    l.Position = UDim2.new(0, 6, 0, 0)
+    l.Position = UDim2.new(0, 8, 0, 0)
     
     local sw = Instance.new("Frame") 
-    sw.Size = UDim2.new(0, 24, 0, 14) 
-    sw.Position = UDim2.new(1, -28, 0.5, -7) 
+    sw.Size = UDim2.new(0, 26, 0, 14) 
+    sw.Position = UDim2.new(1, -30, 0.5, -7) 
     sw.BorderSizePixel = 0 
     sw.Parent = row 
     corner(sw, 7)
     
-    local swGrad = applyGradient3Color(sw)
     local kn = Instance.new("Frame") 
     kn.Size = UDim2.new(0, 10, 0, 10) 
     kn.BackgroundColor3 = Color3.new(1, 1, 1) 
@@ -1433,12 +1375,11 @@ local function toggle(parent, text, key, w, onChange, tbl)
 
     local function refresh(anim)
         local on = CFG_TARGET[key] and true or false
-        local p = { BackgroundColor3 = on and Color3.new(1, 1, 1) or T.off }
-        swGrad.Enabled = on
+        local p = { BackgroundColor3 = on and T.accentBright or T.off }
         local kp = { Position = on and UDim2.new(1, -12, 0.5, -5) or UDim2.new(0, 2, 0.5, -5) }
         if anim then tween(sw, p) tween(kn, kp) else sw.BackgroundColor3 = p.BackgroundColor3 kn.Position = kp.Position end
         rowStroke.Color = on and T.accentBright or T.stroke
-        rowStroke.Transparency = on and 0.2 or 0.7
+        rowStroke.Transparency = on and 0.2 or 0.4
     end
     refresh(false)
 
@@ -1453,18 +1394,18 @@ end
 
 local function buttonToggle(parent, text, tbl, key, opts, w)
     local row = Instance.new("TextButton")
-    row.Size = UDim2.new(0, w or 140, 0, 26)
+    row.Size = UDim2.new(0, w or 140, 0, 28)
     row.BackgroundColor3 = T.card
     row.BackgroundTransparency = 0
     row.Text = ""
     row.AutoButtonColor = false
     row.Parent = parent
-    corner(row, 5)
-    local rowStroke = stroke(row, T.stroke, 1, 0.7)
+    corner(row, 6)
+    stroke(row, T.stroke, 1, 0.4)
 
     local l = label(row, text, 10) 
     l.Size = UDim2.new(0.5, 0, 1, 0) 
-    l.Position = UDim2.new(0, 6, 0, 0)
+    l.Position = UDim2.new(0, 8, 0, 0)
     
     local valLbl = label(row, tostring(tbl[key]), 10, T.accentBright, MAIN_FONT)
     valLbl.Size = UDim2.new(0.5, -8, 1, 0) 
@@ -1486,38 +1427,37 @@ end
 
 local function slider(parent, text, tbl, key, MIN, MAX, step, pos, width)
     local row = Instance.new("Frame")
-    row.Size = UDim2.new(0, width or 300, 0, 38)
+    row.Size = UDim2.new(0, width or 300, 0, 40)
     row.Position = pos
     row.BackgroundColor3 = T.card
     row.BackgroundTransparency = 0
     row.BorderSizePixel = 0
     row.Parent = parent
-    corner(row, 5)
-    stroke(row, T.stroke, 1, 0.6)
+    corner(row, 6)
+    stroke(row, T.stroke, 1, 0.4)
 
     local l = label(row, text, 10) 
     l.Size = UDim2.new(1, -60, 0, 16) 
-    l.Position = UDim2.new(0, 8, 0, 3)
+    l.Position = UDim2.new(0, 8, 0, 4)
     
     local v = label(row, "", 10, T.accentBright, MAIN_FONT) 
     v.Size = UDim2.new(0, 50, 0, 16) 
-    v.Position = UDim2.new(1, -58, 0, 3) 
+    v.Position = UDim2.new(1, -58, 0, 4) 
     v.TextXAlignment = Enum.TextXAlignment.Right
 
     local track = Instance.new("Frame") 
-    track.Size = UDim2.new(1, -16, 0, 5) 
-    track.Position = UDim2.new(0, 8, 1, -10) 
+    track.Size = UDim2.new(1, -16, 0, 6) 
+    track.Position = UDim2.new(0, 8, 1, -12) 
     track.BackgroundColor3 = T.off 
     track.BorderSizePixel = 0 
     track.Parent = row 
     corner(track, 3)
     
     local fill = Instance.new("Frame") 
-    fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255) 
+    fill.BackgroundColor3 = T.accentBright 
     fill.BorderSizePixel = 0 
     fill.Parent = track 
     corner(fill, 3)
-    applyGradient3Color(fill)
 
     local function set(val)
         val = math.clamp(math.floor(val / step + 0.5) * step, MIN, MAX)
@@ -1552,7 +1492,7 @@ end
 
 -- ESP Page
 local espPage = Instance.new("Frame")
-espPage.Size = UDim2.new(1, -20, 1, -82)
+espPage.Size = UDim2.new(1, -20, 1, -86)
 espPage.Position = UDim2.new(0, 10, 0, 44)
 espPage.BackgroundColor3 = T.panel
 espPage.BackgroundTransparency = 0
@@ -1560,9 +1500,9 @@ espPage.BorderSizePixel = 0
 espPage.Visible = false
 espPage.Parent = main
 corner(espPage, 8)
-stroke(espPage, T.stroke, 1, 0.5)
+stroke(espPage, T.stroke, 1, 0.3)
 
-local espTitle = label(espPage, "ESP Features", 12, T.text, MAIN_FONT) 
+local espTitle = label(espPage, "ESP Features", 13, T.text, MAIN_FONT) 
 espTitle.Size = UDim2.new(1, -20, 0, 22) 
 espTitle.Position = UDim2.new(0, 10, 0, 4)
 
@@ -1577,7 +1517,7 @@ espGrid.BackgroundTransparency = 1
 espGrid.Parent = espPage
 
 local eg = Instance.new("UIGridLayout")
-eg.CellSize = isMobile and UDim2.new(0, 140, 0, 28) or UDim2.new(0, 150, 0, 28)
+eg.CellSize = UDim2.new(0, 150, 0, 28)
 eg.CellPadding = UDim2.new(0, 6, 0, 6)
 eg.Parent = espGrid
 
@@ -1591,11 +1531,11 @@ toggle(espGrid, "Weapon", "weapon", 140, nil, E)
 toggle(espGrid, "Tracers", "tracers", 140, nil, E)
 toggle(espGrid, "Show team", "showTeam", 140, nil, E)
 
-slider(espPage, "Max distance", E, "maxDist", 200, 5000, 50, UDim2.new(0, 10, 0, 180), isMobile and 300 or 320)
+slider(espPage, "Max distance", E, "maxDist", 200, 5000, 50, UDim2.new(0, 10, 0, 185), 320)
 
 -- SILENT AIM Page
 local aimPage = Instance.new("Frame")
-aimPage.Size = UDim2.new(1, -20, 1, -82)
+aimPage.Size = UDim2.new(1, -20, 1, -86)
 aimPage.Position = UDim2.new(0, 10, 0, 44)
 aimPage.BackgroundColor3 = T.panel
 aimPage.BackgroundTransparency = 0
@@ -1603,9 +1543,9 @@ aimPage.BorderSizePixel = 0
 aimPage.Visible = false
 aimPage.Parent = main
 corner(aimPage, 8)
-stroke(aimPage, T.stroke, 1, 0.5)
+stroke(aimPage, T.stroke, 1, 0.3)
 
-local aimTitle = label(aimPage, "Silent Aim & Wallbang", 12, T.text, MAIN_FONT) 
+local aimTitle = label(aimPage, "Silent Aim & Wallbang", 13, T.text, MAIN_FONT) 
 aimTitle.Size = UDim2.new(1, -20, 0, 22) 
 aimTitle.Position = UDim2.new(0, 10, 0, 4)
 
@@ -1620,7 +1560,7 @@ aimGrid.BackgroundTransparency = 1
 aimGrid.Parent = aimPage
 
 local ag = Instance.new("UIGridLayout") 
-ag.CellSize = isMobile and UDim2.new(0, 140, 0, 28) or UDim2.new(0, 150, 0, 28) 
+ag.CellSize = UDim2.new(0, 150, 0, 28) 
 ag.CellPadding = UDim2.new(0, 6, 0, 6) 
 ag.Parent = aimGrid
 
@@ -1630,11 +1570,11 @@ toggle(aimGrid, "Visible Check", "visibleCheck", 140, nil, A)
 toggle(aimGrid, "Wallbang", "wallbang", 140, nil, A)
 buttonToggle(aimGrid, "Hit Part", A, "part", { "Head", "Closest" }, 140)
 
-slider(aimPage, "FOV (px)", A, "fov", 30, 600, 10, UDim2.new(0, 10, 0, 120), isMobile and 240 or 280)
+slider(aimPage, "FOV (px)", A, "fov", 30, 600, 10, UDim2.new(0, 10, 0, 125), 280)
 
 -- GUN MODS Page
 local gunModPage = Instance.new("Frame")
-gunModPage.Size = UDim2.new(1, -20, 1, -82)
+gunModPage.Size = UDim2.new(1, -20, 1, -86)
 gunModPage.Position = UDim2.new(0, 10, 0, 44)
 gunModPage.BackgroundColor3 = T.panel
 gunModPage.BackgroundTransparency = 0
@@ -1642,9 +1582,9 @@ gunModPage.BorderSizePixel = 0
 gunModPage.Visible = false
 gunModPage.Parent = main
 corner(gunModPage, 8)
-stroke(gunModPage, T.stroke, 1, 0.5)
+stroke(gunModPage, T.stroke, 1, 0.3)
 
-local gmTitle = label(gunModPage, "Gun Modifications", 12, T.text, MAIN_FONT) 
+local gmTitle = label(gunModPage, "Gun Modifications", 13, T.text, MAIN_FONT) 
 gmTitle.Size = UDim2.new(1, -20, 0, 22) 
 gmTitle.Position = UDim2.new(0, 10, 0, 4)
 
@@ -1659,25 +1599,28 @@ gmGrid.BackgroundTransparency = 1
 gmGrid.Parent = gunModPage
 
 local gmg = Instance.new("UIGridLayout") 
-gmg.CellSize = isMobile and UDim2.new(0, 140, 0, 28) or UDim2.new(0, 150, 0, 28) 
+gmg.CellSize = UDim2.new(0, 150, 0, 28) 
 gmg.CellPadding = UDim2.new(0, 6, 0, 6) 
 gmg.Parent = gmGrid
 
 toggle(gmGrid, "Rapid Fire", "firerate", 140, nil, G)
 toggle(gmGrid, "Full Auto", "autoFire", 140, nil, G)
 
-slider(gunModPage, "Fire Delay (Sec)", G, "firerateValue", 0.01, 0.2, 0.01, UDim2.new(0, 10, 0, 120), isMobile and 280 or 320)
+slider(gunModPage, "Fire Delay (Sec)", G, "firerateValue", 0.01, 0.2, 0.01, UDim2.new(0, 10, 0, 125), 320)
 
 -- Skins Logic UI
 local selectedWeapon = nil
 local currentCat = "All"
 local wepButtons = {}
 
-local function iconImage(parent, img, size)
+local function iconImage(parent, img, size, color)
     local im = Instance.new("ImageLabel")
     im.BackgroundTransparency = 1 
     im.Size = size 
     im.ScaleType = Enum.ScaleType.Fit
+    if color then
+        im.ImageColor3 = color
+    end
     if type(img) == "string" and #img > 0 then 
         im.Image = img:match("^rbxassetid://") and img or ("rbxassetid://" .. tostring(img):gsub("%D", ""))
     elseif type(img) == "number" then 
@@ -1699,23 +1642,24 @@ local function buildSkins(weapon)
     rSub.Text = #list .. " skins" .. (sel and (" • " .. sel) or "")
 
     for i, s in ipairs(list) do
+        local isSelected = (sel == s.name)
+        
         local card = Instance.new("TextButton")
         card.LayoutOrder = i 
         card.Text = "" 
         card.AutoButtonColor = false
-        card.BackgroundColor3 = (sel == s.name) and T.accentDim or T.card
+        card.BackgroundColor3 = isSelected and T.accentDim or T.card
         card.BackgroundTransparency = 0
         card.Parent = skinGrid
-        corner(card, 5)
+        corner(card, 8)
         
-        local cardStroke = stroke(card, (sel == s.name) and Color3.fromRGB(255, 255, 255) or T.stroke, 1, (sel == s.name) and 0.1 or 0.6)
-        if sel == s.name then applyGradient3Color(cardStroke) end
+        local cardStroke = stroke(card, isSelected and T.accentBright or T.stroke, isSelected and 1.5 or 1, isSelected and 0 or 0.4)
 
-        -- ปรับขนาดรูปสกินและข้อความชื่อสกินให้กระชับและไม่ทับขอบ
-        iconImage(card, s.icon, UDim2.new(1, -8, 0, 40)).Position = UDim2.new(0, 4, 0, 4)
-        local nm = label(card, s.name, 9, T.text, MAIN_FONT)
-        nm.Size = UDim2.new(1, -8, 0, 24) 
-        nm.Position = UDim2.new(0, 4, 1, -26) 
+        iconImage(card, s.icon, UDim2.new(1, -12, 0, 48)).Position = UDim2.new(0, 6, 0, 6)
+        
+        local nm = label(card, s.name, 10, isSelected and T.accentBright or T.text, MAIN_FONT)
+        nm.Size = UDim2.new(1, -8, 0, 28) 
+        nm.Position = UDim2.new(0, 4, 1, -30) 
         nm.TextXAlignment = Enum.TextXAlignment.Center 
         nm.TextWrapped = true
 
@@ -1723,11 +1667,9 @@ local function buildSkins(weapon)
             CFG.skins[weapon] = s.name
             if isKnife(weapon) then CFG.knifeModel = weapon end
             
-            -- ตรรกะพิเศษเมื่อเลือกสกินถุงมือใหม่
             if isGlove(weapon) then 
                 CFG.gloveModel = weapon 
                 
-                -- 1. สลับสกินมีดไปเป็นอีกอัน/Stock แล้วสลับกลับอันเดิม
                 local currentKnifeModel = CFG.knifeModel or "T Knife"
                 local knifeSkins = skinsFor(currentKnifeModel)
                 local currentKnifeSkin = CFG.skins[currentKnifeModel] or "Stock"
@@ -1746,7 +1688,6 @@ local function buildSkins(weapon)
                 CFG.skins[currentKnifeModel] = currentKnifeSkin
                 updateLiveInventory()
 
-                -- 2. เลือกสกินปืนใหม่ทุกอันแล้วสลับกลับอันเดิม
                 for _, wName in ipairs(allWeapons) do
                     if not isKnife(wName) and not isGlove(wName) then
                         local wSkins = skinsFor(wName)
@@ -1774,7 +1715,6 @@ local function buildSkins(weapon)
             buildSkins(weapon)
             pcall(updateLiveInventory)
             pcall(WeaponEngine.sync)
-            setStatus(weapon .. " -> " .. s.name, T.green)
         end)
     end
 end
@@ -1787,13 +1727,22 @@ resetBtn.MouseButton1Click:Connect(function()
     saveCfg()
     buildSkins(selectedWeapon)
     pcall(updateLiveInventory)
-    setStatus("Reset: " .. selectedWeapon, T.dim)
 end)
 
 local function selectWeapon(w)
     selectedWeapon = w
     for name, b in pairs(wepButtons) do 
-        b.BackgroundColor3 = (name == w) and T.accentDim or T.card 
+        local isSel = (name == w)
+        b.BackgroundColor3 = isSel and T.accentDim or T.card 
+        
+        local imgLabel = b:FindFirstChildOfClass("ImageLabel")
+        if imgLabel then
+            imgLabel.ImageColor3 = isSel and T.accentBright or T.text
+        end
+        local textLabel = b:FindFirstChildOfClass("TextLabel")
+        if textLabel then
+            textLabel.TextColor3 = isSel and T.accentBright or T.text
+        end
     end
     buildSkins(w)
 end
@@ -1807,37 +1756,28 @@ local function buildWeapons()
     for i, w in ipairs(allWeapons) do
         local cat = classOf(w)
         if (currentCat == "All" or cat == currentCat) and (q == "" or w:lower():find(q, 1, true)) then
+            local isSel = (selectedWeapon == w)
             local b = Instance.new("TextButton")
-            b.Size = UDim2.new(1, 0, 0, 26) 
+            b.Size = UDim2.new(1, 0, 0, 28) 
             b.LayoutOrder = i 
             b.Text = "" 
             b.AutoButtonColor = false
-            b.BackgroundColor3 = (selectedWeapon == w) and T.accentDim or T.card
+            b.BackgroundColor3 = isSel and T.accentDim or T.card
             b.BackgroundTransparency = 0
             b.Parent = wepList
-            corner(b, 5)
+            corner(b, 6)
             
-            local wStroke = stroke(b, (selectedWeapon == w) and Color3.fromRGB(255, 255, 255) or T.stroke, 1, (selectedWeapon == w) and 0.2 or 0.7)
-            if selectedWeapon == w then applyGradient3Color(wStroke) end
+            stroke(b, isSel and T.accentBright or T.stroke, 1, isSel and 0.2 or 0.5)
 
             local p = props(w)
             if p and (p.Icon or p.ReverseIcon) then 
-                iconImage(b, p.Icon or p.ReverseIcon, UDim2.new(0, 30, 0, 18)).Position = UDim2.new(0, 4, 0.5, -9) 
+                local iconCol = isSel and T.accentBright or T.text
+                iconImage(b, p.Icon or p.ReverseIcon, UDim2.new(0, 30, 0, 18), iconCol).Position = UDim2.new(0, 6, 0.5, -9) 
             end
 
-            local l = label(b, w, 10, T.text, MAIN_FONT)
+            local l = label(b, w, 11, isSel and T.accentBright or T.text, MAIN_FONT)
             l.Size = UDim2.new(1, -40, 1, 0) 
-            l.Position = UDim2.new(0, 36, 0, 0)
-
-            if CFG.skins[w] then
-                local m = Instance.new("Frame") 
-                m.Size = UDim2.new(0, 5, 0, 5) 
-                m.Position = UDim2.new(1, -8, 0.5, -2) 
-                m.BackgroundColor3 = T.green 
-                m.BorderSizePixel = 0 
-                m.Parent = b 
-                corner(m, 3)
-            end
+            l.Position = UDim2.new(0, 40, 0, 0)
 
             b.MouseButton1Click:Connect(function() selectWeapon(w) end)
             wepButtons[w] = b
@@ -1845,6 +1785,7 @@ local function buildWeapons()
     end
 end
 
+-- CATEGORY BAR
 do
     local present = {} 
     for _, w in ipairs(allWeapons) do present[classOf(w)] = true end
@@ -1854,15 +1795,16 @@ do
 
     local function refreshCats()
         for c, b in pairs(catBtns) do
-            b.BackgroundColor3 = (c == currentCat) and T.accentDim or T.card
-            b.TextColor3 = (c == currentCat) and T.text or T.dim
+            local active = (c == currentCat)
+            b.BackgroundColor3 = active and T.accentBright or T.card
+            b.TextColor3 = active and Color3.new(1, 1, 1) or T.dim
         end
     end
 
     for i, c in ipairs(cats) do
         local b = Instance.new("TextButton")
         b.LayoutOrder = i 
-        b.Size = UDim2.new(0, 0, 1, -2) 
+        b.Size = UDim2.new(0, 0, 1, 0) 
         b.AutomaticSize = Enum.AutomaticSize.X
         b.BackgroundColor3 = T.card 
         b.BackgroundTransparency = 0 
@@ -1872,8 +1814,8 @@ do
         b.Font = MAIN_FONT 
         b.AutoButtonColor = false 
         b.Parent = catBar
-        corner(b, 4)
-        stroke(b, T.stroke, 1, 0.7)
+        corner(b, 5)
+        stroke(b, T.stroke, 1, 0.4)
         
         local pp = Instance.new("UIPadding") 
         pp.PaddingLeft = UDim.new(0, 8) 
@@ -1893,7 +1835,7 @@ end
 search:GetPropertyChangedSignal("Text"):Connect(buildWeapons)
 buildWeapons()
 
-local FULL_H, BAR_H = isMobile and 360 or 420, 38
+local FULL_H, BAR_H = 430, 38
 local collapsed = false
 
 local function applyPageVisibility()
@@ -1905,8 +1847,9 @@ local function applyPageVisibility()
     navBar.Visible = not collapsed
     
     for nm, b in pairs(pageTabs) do
-        b.BackgroundColor3 = (nm == currentPage) and T.accentDim or T.card
-        b.TextColor3 = (nm == currentPage) and T.accentBright or T.dim
+        local active = (nm == currentPage)
+        b.BackgroundColor3 = active and T.accentDim or T.card
+        b.TextColor3 = active and T.accentBright or T.dim
     end
 end
 
@@ -1920,7 +1863,7 @@ local function setCollapsed(c)
     applyPageVisibility()
     topFix.Visible = not c
     closeBtn.Text = c and "+" or "–"
-    tween(main, { Size = UDim2.new(0, isMobile and 540 or 620, 0, c and BAR_H or FULL_H) }, 0.2)
+    tween(main, { Size = UDim2.new(0, 640, 0, c and BAR_H or FULL_H) }, 0.2)
 end
 
 applyPageVisibility()
@@ -1933,8 +1876,6 @@ local inputConn = UIS.InputBegan:Connect(function(i, gp)
     if gp then return end
     if i.KeyCode == Enum.KeyCode.RightShift then main.Visible = not main.Visible end
 end)
-
-setStatus("Ready", T.accentBright)
 
 _G.RebornUnload = function()
     for k, f in pairs(orig) do
