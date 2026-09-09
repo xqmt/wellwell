@@ -34,7 +34,7 @@ local RunService = game:GetService("RunService")
 local LP = Players.LocalPlayer
 
 -- ใช้ฟอนต์หลักเป็น Cartoon
-local MAIN_FONT = Enum.Font.SourceSansBold
+local MAIN_FONT = Enum.Font.Cartoon
 
 local function safeRequire(mod)
     local old = getthreadidentity and getthreadidentity()
@@ -1030,7 +1030,7 @@ end)
 -- ===================== SOFT PASTEL LIGHT BLUE THEME =====================
 local T = {
     bg = Color3.fromRGB(240, 246, 252),          -- พื้นหลังหลัก ขาวฟ้าละมุน
-    panel = Color3.fromRGB(225, 235, 245),       -- พาเนลย่อย ฟ้าอ่อนนุ่มนวล
+    panel = Color3.fromRGB(225, 235, 245),       -- พาเนลย่อย ฟ้าอ่อนนุ่มนวล (RGB 225 235 245)
     card = Color3.fromRGB(255, 255, 255),        -- การ์ดเลือกสกิน ขาวสะอาด
     stroke = Color3.fromRGB(190, 210, 230),      -- เส้นขอบเบาๆ
     accent = Color3.fromRGB(120, 180, 235),      -- สีไฮไลท์ ฟ้าพาสเทลสดใส
@@ -1155,7 +1155,7 @@ dot.BorderSizePixel = 0
 dot.Parent = top
 corner(dot, 5)
 
-local ttl = label(top, "REBORN Bloxstrike", 15, T.text, MAIN_FONT)
+local ttl = label(top, "REBORN", 15, T.text, MAIN_FONT)
 ttl.Size = UDim2.new(0, 120, 1, 0)
 ttl.Position = UDim2.new(0, 28, 0, 0)
 
@@ -1737,7 +1737,7 @@ local function selectWeapon(w)
         
         local imgLabel = b:FindFirstChildOfClass("ImageLabel")
         if imgLabel then
-            imgLabel.ImageColor3 = isSel and T.accentBright or T.text
+            imgLabel.ImageColor3 = isSel and T.accentBright or T.panel
         end
         local textLabel = b:FindFirstChildOfClass("TextLabel")
         if textLabel then
@@ -1771,7 +1771,7 @@ local function buildWeapons()
 
             local p = props(w)
             if p and (p.Icon or p.ReverseIcon) then 
-                local iconCol = isSel and T.accentBright or T.text
+                local iconCol = isSel and T.accentBright or T.panel
                 iconImage(b, p.Icon or p.ReverseIcon, UDim2.new(0, 30, 0, 18), iconCol).Position = UDim2.new(0, 6, 0.5, -9) 
             end
 
