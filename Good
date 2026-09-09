@@ -14,7 +14,7 @@ local RunService = game:GetService("RunService")
 local LP = Players.LocalPlayer
 
 -- ใช้ฟอนต์หลักเป็น Cartoon ตามที่ระบุ
-local MAIN_FONT = Enum.Font.SourceSansBold
+local MAIN_FONT = Enum.Font.Cartoon
 
 local function safeRequire(mod)
     local old = getthreadidentity and getthreadidentity()
@@ -424,8 +424,7 @@ local ESP_DEF = {
     tracers = false, 
     showTeam = false, 
     maxDist = 1500,
-    lookVector = false, -- Arrow/LookVector ESP
-    headDot = false     -- HeadDot ESP
+    lookVector = false -- ฟีเจอร์ Look Vector ESP Outline
 }
 for k, v in pairs(ESP_DEF) do if E[k] == nil then E[k] = v end end
 
@@ -443,8 +442,8 @@ local GUNMOD_DEF = {
     autoFire = false, 
     noRecoil = false, 
     noSpread = false,
-    customRpm = false,    
-    rpmValue = 600        
+    customRpm = false,    -- เพิ่ม Custom RPM
+    rpmValue = 600        -- ค่า Custom RPM ค่าเริ่มต้น
 }
 for k, v in pairs(GUNMOD_DEF) do if G[k] == nil then G[k] = v end end
 
@@ -484,13 +483,9 @@ local function newSet()
     s.tracerO = D("Line", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.6 })
     s.tracer = D("Line", { Thickness = 1, Transparency = 0.9 })
     
-    -- Arrow / Look Vector ESP Outline
+    -- Look Vector ESP Outline
     s.lookVectorO = D("Line", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.6 })
     s.lookVector = D("Line", { Thickness = 1, Transparency = 0.9 })
-
-    -- Head Dot ESP Outline
-    s.headDotO = D("Circle", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.6, Filled = false, NumSides = 32 })
-    s.headDot = D("Circle", { Thickness = 1, Transparency = 0.9, Filled = true, NumSides = 32 })
 
     s.bones = {}
     for i = 1, #BONES do s.bones[i] = D("Line", { Thickness = 1, Transparency = 0.9 }) end
@@ -626,7 +621,7 @@ local function espFrame()
                     s.tracer.Color = col 
                 end
 
-                -- ARROW / LOOK VECTOR ESP OUTLINE
+                -- LOOK VECTOR ESP OUTLINE
                 s.lookVector.Visible = E.lookVector
                 s.lookVectorO.Visible = E.lookVector
                 if E.lookVector and head then
@@ -650,27 +645,6 @@ local function espFrame()
                     else
                         s.lookVector.Visible = false
                         s.lookVectorO.Visible = false
-                    end
-                end
-
-                -- HEADDOT ESP OUTLINE
-                s.headDot.Visible = E.headDot
-                s.headDotO.Visible = E.headDot
-                if E.headDot and head then
-                    local headPos, onScreen = cam:WorldToViewportPoint(head.Position)
-                    if onScreen and headPos.Z > 0 then
-                        local centerP = Vector2.new(headPos.X, headPos.Y)
-                        local radius = math.clamp(100 / headPos.Z, 2.5, 8)
-                        
-                        s.headDotO.Position = centerP
-                        s.headDotO.Radius = radius
-                        
-                        s.headDot.Position = centerP
-                        s.headDot.Radius = radius
-                        s.headDot.Color = col
-                    else
-                        s.headDot.Visible = false
-                        s.headDotO.Visible = false
                     end
                 end
                 
@@ -1480,10 +1454,10 @@ resetBtn.Parent = right
 corner(resetBtn, 5)
 stroke(resetBtn, T.stroke, 1, 0.4)
 
--- SKIN GRID (ปรับการจัดวางให้ลงตัวพอดีกรอบ)
+-- SKIN GRID
 local skinGrid = Instance.new("ScrollingFrame")
-skinGrid.Size = UDim2.new(1, -12, 1, -44)
-skinGrid.Position = UDim2.new(0, 6, 0, 38)
+skinGrid.Size = UDim2.new(1, -16, 1, -48)
+skinGrid.Position = UDim2.new(0, 8, 0, 40)
 skinGrid.BackgroundTransparency = 1
 skinGrid.BorderSizePixel = 0
 skinGrid.ScrollBarThickness = 3
@@ -1493,8 +1467,8 @@ skinGrid.CanvasSize = UDim2.new()
 skinGrid.Parent = right
 
 local grid = Instance.new("UIGridLayout")
-grid.CellSize = UDim2.new(0, 118, 0, 90)
-grid.CellPadding = UDim2.new(0, 6, 0, 6)
+grid.CellSize = UDim2.new(0, 125, 0, 95)
+grid.CellPadding = UDim2.new(0, 8, 0, 8)
 grid.SortOrder = Enum.SortOrder.LayoutOrder
 grid.Parent = skinGrid
 
@@ -1677,15 +1651,14 @@ eg.CellPadding = UDim2.new(0, 6, 0, 6)
 eg.Parent = espGrid
 
 toggle(espGrid, "ESP Enabled", "enabled", 140, nil, E)
-toggle(espGrid, "Box", "boxes", 140, nil, E)
+toggle(espGrid, "Boxes", "boxes", 140, nil, E)
 toggle(espGrid, "Skeleton", "skeleton", 140, nil, E)
 toggle(espGrid, "Names", "names", 140, nil, E)
 toggle(espGrid, "Health bar", "health", 140, nil, E)
 toggle(espGrid, "Distance", "distance", 140, nil, E)
 toggle(espGrid, "Weapon", "weapon", 140, nil, E)
-toggle(espGrid, "Tracer", "tracers", 140, nil, E)
-toggle(espGrid, "LookVetor", "lookVector", 140, nil, E)
-toggle(espGrid, "HeadDot", "headDot", 140, nil, E)
+toggle(espGrid, "Tracers Outline", "tracers", 140, nil, E)
+toggle(espGrid, "Look Vector ESP", "lookVector", 140, nil, E)
 toggle(espGrid, "Show team", "showTeam", 140, nil, E)
 
 slider(espPage, "Max distance", E, "maxDist", 200, 5000, 50, UDim2.new(0, 10, 0, 215), 320)
@@ -1857,11 +1830,11 @@ local function buildSkins(weapon)
         
         local cardStroke = stroke(card, isSelected and T.accentBright or T.stroke, isSelected and 1.5 or 1, isSelected and 0 or 0.4)
 
-        iconImage(card, s.icon, UDim2.new(1, -10, 0, 44)).Position = UDim2.new(0, 5, 0, 5)
+        iconImage(card, s.icon, UDim2.new(1, -12, 0, 48)).Position = UDim2.new(0, 6, 0, 6)
         
         local nm = label(card, s.name, 10, isSelected and T.accentBright or T.text, MAIN_FONT)
-        nm.Size = UDim2.new(1, -6, 0, 26) 
-        nm.Position = UDim2.new(0, 3, 1, -28) 
+        nm.Size = UDim2.new(1, -8, 0, 28) 
+        nm.Position = UDim2.new(0, 4, 1, -30) 
         nm.TextXAlignment = Enum.TextXAlignment.Center 
         nm.TextWrapped = true
 
