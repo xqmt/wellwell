@@ -15,7 +15,7 @@ local Workspace = game:GetService("Workspace")
 local LP = Players.LocalPlayer
 
 -- ใช้ฟอนต์หลักเป็น Cartoon ตามที่ระบุ
-local MAIN_FONT = Enum.Font.Cartoon
+local MAIN_FONT = Enum.Font.SourceSansBold
 
 local function safeRequire(mod)
     local old = getthreadidentity and getthreadidentity()
