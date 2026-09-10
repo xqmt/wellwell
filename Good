@@ -425,9 +425,7 @@ local ESP_DEF = {
     tracers = false, 
     showTeam = false, 
     maxDist = 1500,
-    lookVector = false,
-    highlights = false,
-    headDot = false
+    lookVector = false
 }
 for k, v in pairs(ESP_DEF) do if E[k] == nil then E[k] = v end end
 
@@ -495,9 +493,6 @@ local function newSet()
     s.lookVectorO = D("Line", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.6 })
     s.lookVector = D("Line", { Thickness = 1, Transparency = 0.9 })
 
-    s.headDotO = D("Circle", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.6, Filled = false, NumSides = 30 })
-    s.headDot = D("Circle", { Thickness = 1, Transparency = 0.9, Filled = false, NumSides = 30 })
-
     s.bones = {}
     for i = 1, #BONES do s.bones[i] = D("Line", { Thickness = 1, Transparency = 0.9 }) end
     return s
@@ -507,21 +502,14 @@ local function eachDrawing(s, f)
     for k, v in pairs(s) do
         if k == "bones" then 
             for _, l in ipairs(v) do f(l) end 
-        elseif type(v) == "table" and v.Remove then
-            f(v)
+        else 
+            f(v) 
         end
     end
 end
 
-local function hideSet(s) 
-    eachDrawing(s, function(d) d.Visible = false end) 
-    if s.hl then s.hl.Enabled = false end
-end
-
-local function removeSet(s) 
-    eachDrawing(s, function(d) pcall(d.Remove, d) end) 
-    if s.hl then pcall(s.hl.Destroy, s.hl) end
-end
+local function hideSet(s) eachDrawing(s, function(d) d.Visible = false end) end
+local function removeSet(s) eachDrawing(s, function(d) pcall(d.Remove, d) end) end
 
 local pool = {}
 local Characters = workspace:FindFirstChild("Characters")
@@ -662,44 +650,6 @@ local function espFrame()
                         s.lookVector.Visible = false
                         s.lookVectorO.Visible = false
                     end
-                end
-
-                -- Head Dot ESP
-                s.headDot.Visible = E.headDot
-                s.headDotO.Visible = E.headDot
-                if E.headDot and head then
-                    local headPos, onScreen = cam:WorldToViewportPoint(head.Position)
-                    if onScreen and headPos.Z > 0 then
-                        local hPos = Vector2.new(headPos.X, headPos.Y)
-                        local r = math.clamp(1000 / headPos.Z, 3, 10)
-                        
-                        s.headDotO.Position = hPos
-                        s.headDotO.Radius = r
-                        
-                        s.headDot.Position = hPos
-                        s.headDot.Radius = r
-                        s.headDot.Color = col
-                    else
-                        s.headDot.Visible = false
-                        s.headDotO.Visible = false
-                    end
-                end
-
-                -- Highlights ESP (No Fill, Outline Only)
-                if E.highlights and char then
-                    if not s.hl then
-                        local hl = Instance.new("Highlight")
-                        hl.Name = "RebornHighlight"
-                        hl.FillTransparency = 0.65 -- ไม่มี fill
-                        hl.OutlineTransparency = 0 -- มี outline
-                        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                        s.hl = hl
-                    end
-                    s.hl.Parent = char
-                    s.hl.OutlineColor = col
-                    s.hl.Enabled = true
-                elseif s.hl then
-                    s.hl.Enabled = false
                 end
                 
                 for i, b in ipairs(BONES) do
@@ -1832,7 +1782,7 @@ espSub.Size = UDim2.new(1, -20, 0, 12)
 espSub.Position = UDim2.new(0, 10, 0, 22)
 
 local espGrid = Instance.new("Frame")
-espGrid.Size = UDim2.new(1, -20, 0, 180)
+espGrid.Size = UDim2.new(1, -20, 0, 150)
 espGrid.Position = UDim2.new(0, 10, 0, 42)
 espGrid.BackgroundTransparency = 1
 espGrid.Parent = espPage
@@ -1851,11 +1801,9 @@ toggle(espGrid, "Distance", "distance", 140, nil, E)
 toggle(espGrid, "Weapon", "weapon", 140, nil, E)
 toggle(espGrid, "Tracers Outline", "tracers", 140, nil, E)
 toggle(espGrid, "Look Vector ESP", "lookVector", 140, nil, E)
-toggle(espGrid, "Highlights ESP", "highlights", 140, nil, E)
-toggle(espGrid, "HeadDot ESP", "headDot", 140, nil, E)
 toggle(espGrid, "Show team", "showTeam", 140, nil, E)
 
-slider(espPage, "Max distance", E, "maxDist", 200, 5000, 50, UDim2.new(0, 10, 0, 235), 320)
+slider(espPage, "Max distance", E, "maxDist", 200, 5000, 50, UDim2.new(0, 10, 0, 215), 320)
 
 -- SILENT AIM Page
 local aimPage = Instance.new("Frame")
