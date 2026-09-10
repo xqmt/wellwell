@@ -1,5 +1,5 @@
 -- ============================================================
--- REBORN CS2 THEME - SOFT PASTEL LIGHT BLUE EDITION (UPDATED)
+-- REBORN CS2 THEME - SOFT PASTEL LIGHT BLUE EDITION (UPDATED + WORLD TAB)
 -- ============================================================
 
 if _G.RebornUnload then pcall(_G.RebornUnload) end
@@ -11,10 +11,11 @@ local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 local LP = Players.LocalPlayer
 
 -- ใช้ฟอนต์หลักเป็น Cartoon ตามที่ระบุ
-local MAIN_FONT = Enum.Font.SourceSansBold
+local MAIN_FONT = Enum.Font.Cartoon
 
 local function safeRequire(mod)
     local old = getthreadidentity and getthreadidentity()
@@ -424,7 +425,9 @@ local ESP_DEF = {
     tracers = false, 
     showTeam = false, 
     maxDist = 1500,
-    lookVector = false -- ฟีเจอร์ Look Vector ESP Outline
+    lookVector = false,
+    highlights = false,
+    headDot = false
 }
 for k, v in pairs(ESP_DEF) do if E[k] == nil then E[k] = v end end
 
@@ -442,8 +445,9 @@ local GUNMOD_DEF = {
     autoFire = false, 
     noRecoil = false, 
     noSpread = false,
-    customRpm = false,    -- เพิ่ม Custom RPM
-    rpmValue = 600        -- ค่า Custom RPM ค่าเริ่มต้น
+    customRpm = false,
+    rpmValue = 600,
+    instantReload = false
 }
 for k, v in pairs(GUNMOD_DEF) do if G[k] == nil then G[k] = v end end
 
@@ -452,6 +456,12 @@ CFG.misc = type(CFG.misc) == "table" and CFG.misc or {}
 local M = CFG.misc
 local MISC_DEF = { specterChecked = false, noFlash = false, noSmoke = false }
 for k, v in pairs(MISC_DEF) do if M[k] == nil then M[k] = v end end
+
+-- ===================== WORLD CONFIG =====================
+CFG.world = type(CFG.world) == "table" and CFG.world or {}
+local W = CFG.world
+local WORLD_DEF = { customFov = false, fovValue = 80, thirdPerson = false, thirdPersonDist = 10 }
+for k, v in pairs(WORLD_DEF) do if W[k] == nil then W[k] = v end end
 
 local COL_ENEMY = Color3.fromRGB(135, 206, 235)
 local COL_TEAM = Color3.fromRGB(135, 206, 235)
@@ -479,13 +489,14 @@ local function newSet()
     s.hpBg = D("Square", { Filled = true, Color = Color3.new(0, 0, 0), Transparency = 0.6 })
     s.hp = D("Square", { Filled = true, Transparency = 1 })
     
-    -- Outline Tracer ESP
     s.tracerO = D("Line", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.6 })
     s.tracer = D("Line", { Thickness = 1, Transparency = 0.9 })
     
-    -- Look Vector ESP Outline
     s.lookVectorO = D("Line", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.6 })
     s.lookVector = D("Line", { Thickness = 1, Transparency = 0.9 })
+
+    s.headDotO = D("Circle", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.6, Filled = false, NumSides = 30 })
+    s.headDot = D("Circle", { Thickness = 1, Transparency = 0.9, Filled = false, NumSides = 30 })
 
     s.bones = {}
     for i = 1, #BONES do s.bones[i] = D("Line", { Thickness = 1, Transparency = 0.9 }) end
@@ -496,14 +507,21 @@ local function eachDrawing(s, f)
     for k, v in pairs(s) do
         if k == "bones" then 
             for _, l in ipairs(v) do f(l) end 
-        else 
-            f(v) 
+        elseif type(v) == "table" and v.Remove then
+            f(v)
         end
     end
 end
 
-local function hideSet(s) eachDrawing(s, function(d) d.Visible = false end) end
-local function removeSet(s) eachDrawing(s, function(d) pcall(d.Remove, d) end) end
+local function hideSet(s) 
+    eachDrawing(s, function(d) d.Visible = false end) 
+    if s.hl then s.hl.Enabled = false end
+end
+
+local function removeSet(s) 
+    eachDrawing(s, function(d) pcall(d.Remove, d) end) 
+    if s.hl then pcall(s.hl.Destroy, s.hl) end
+end
 
 local pool = {}
 local Characters = workspace:FindFirstChild("Characters")
@@ -606,7 +624,6 @@ local function espFrame()
                     s.hp.Color = Color3.fromRGB(180, 220, 255):Lerp(Color3.fromRGB(135, 206, 250), ratio)
                 end
                 
-                -- OUTLINE TRACER ESP
                 s.tracer.Visible = E.tracers
                 s.tracerO.Visible = E.tracers
                 if E.tracers then 
@@ -621,7 +638,6 @@ local function espFrame()
                     s.tracer.Color = col 
                 end
 
-                -- LOOK VECTOR ESP OUTLINE
                 s.lookVector.Visible = E.lookVector
                 s.lookVectorO.Visible = E.lookVector
                 if E.lookVector and head then
@@ -646,6 +662,44 @@ local function espFrame()
                         s.lookVector.Visible = false
                         s.lookVectorO.Visible = false
                     end
+                end
+
+                -- Head Dot ESP
+                s.headDot.Visible = E.headDot
+                s.headDotO.Visible = E.headDot
+                if E.headDot and head then
+                    local headPos, onScreen = cam:WorldToViewportPoint(head.Position)
+                    if onScreen and headPos.Z > 0 then
+                        local hPos = Vector2.new(headPos.X, headPos.Y)
+                        local r = math.clamp(1000 / headPos.Z, 3, 10)
+                        
+                        s.headDotO.Position = hPos
+                        s.headDotO.Radius = r
+                        
+                        s.headDot.Position = hPos
+                        s.headDot.Radius = r
+                        s.headDot.Color = col
+                    else
+                        s.headDot.Visible = false
+                        s.headDotO.Visible = false
+                    end
+                end
+
+                -- Highlights ESP (No Fill, Outline Only)
+                if E.highlights and char then
+                    if not s.hl then
+                        local hl = Instance.new("Highlight")
+                        hl.Name = "RebornHighlight"
+                        hl.FillTransparency = 0.65 -- ไม่มี fill
+                        hl.OutlineTransparency = 0 -- มี outline
+                        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                        s.hl = hl
+                    end
+                    s.hl.Parent = char
+                    s.hl.OutlineColor = col
+                    s.hl.Enabled = true
+                elseif s.hl then
+                    s.hl.Enabled = false
                 end
                 
                 for i, b in ipairs(BONES) do
@@ -768,6 +822,28 @@ function SpectateChecker.cleanup()
     end
     specLabel = nil
 end
+
+-- ===================== THIRD PERSON HOOK =====================
+task.spawn(function()
+    if getrawmetatable and setreadonly then
+        local mt = getrawmetatable(game)
+        local oldNewIndex = mt.__newindex
+        setreadonly(mt, false)
+        mt.__newindex = newcclosure(function(self, key, value)
+            if self == LP and W.thirdPerson then
+                if key == "CameraMode" then
+                    return oldNewIndex(self, key, Enum.CameraMode.Classic)
+                elseif key == "CameraMaxZoomDistance" then
+                    return oldNewIndex(self, key, W.thirdPersonDist or 10)
+                elseif key == "CameraMinZoomDistance" then
+                    return oldNewIndex(self, key, W.thirdPersonDist or 10)
+                end
+            end
+            return oldNewIndex(self, key, value)
+        end)
+        setreadonly(mt, true)
+    end
+end)
 
 -- ===================== SILENT AIM LOGIC =====================
 local COLOR_FOV_BASE = Color3.fromRGB(135, 206, 235)
@@ -958,7 +1034,6 @@ local function patchDatabaseConfig(cfg, name)
 
     local origCfg = WeaponEngine._originalConfigs[name] or {}
 
-    -- คำนวณ FireRate จาก Custom RPM หรือ Fire Rate ปกติ
     local targetFireRate
     if G.customRpm and G.rpmValue and G.rpmValue > 0 then
         targetFireRate = 60 / G.rpmValue
@@ -1150,10 +1225,126 @@ end
 
 WeaponEngine.init()
 
+-- ===================== INSTANT RELOAD ENGINE =====================
+local RELOAD_ANIMS = {
+    ["Reload"]       = true,
+    ["ReloadStart"]  = true,
+    ["ReloadAction"] = true,
+    ["ReloadEnd"]    = true,
+}
+local RELOAD_SPEED = 199
+local reloadHooked = {}
+
+local function getWeaponObjectSafe()
+    local ok, IC = pcall(function()
+        return require(RS.Controllers.InventoryController)
+    end)
+    if not ok or not IC then return nil end
+    return IC.peekCurrentEquippedForMovement and IC.peekCurrentEquippedForMovement() or nil
+end
+
+local function hookAnimationReload(animModule)
+    if not animModule or reloadHooked[animModule] then return end
+    reloadHooked[animModule] = true
+
+    pcall(function()
+        local origPlay = animModule.play
+        animModule.play = function(self_anim, animName, ...)
+            local track = origPlay(self_anim, animName, ...)
+            if track and RELOAD_ANIMS[animName] then
+                task.defer(function()
+                    pcall(function()
+                        if G.instantReload then
+                            if track.IsPlaying then
+                                track:AdjustSpeed(RELOAD_SPEED)
+                            end
+                        end
+                    end)
+                end)
+            end
+            return track
+        end
+    end)
+end
+
+local lastReloadWeapon = nil
+
+task.spawn(function()
+    while task.wait(0.1) do
+        pcall(function()
+            local weapon = getWeaponObjectSafe()
+            if not weapon then return end
+
+            if weapon ~= lastReloadWeapon then
+                lastReloadWeapon = weapon
+                if weapon.Viewmodel and weapon.Viewmodel.Animation then
+                    hookAnimationReload(weapon.Viewmodel.Animation)
+                end
+                if weapon.CharacterAnimator then
+                    hookAnimationReload(weapon.CharacterAnimator)
+                end
+            end
+
+            if not G.instantReload then return end
+
+            if weapon.IsReloading then
+                pcall(function()
+                    if weapon.Viewmodel and weapon.Viewmodel.Animation and weapon.Viewmodel.Animation.Animations then
+                        for name, track in pairs(weapon.Viewmodel.Animation.Animations) do
+                            if RELOAD_ANIMS[name] and track.IsPlaying then
+                                track:AdjustSpeed(RELOAD_SPEED)
+                            end
+                        end
+                    end
+                    if weapon.CharacterAnimator and weapon.CharacterAnimator.Animations then
+                        for name, track in pairs(weapon.CharacterAnimator.Animations) do
+                            if RELOAD_ANIMS[name] and track.IsPlaying then
+                                track:AdjustSpeed(RELOAD_SPEED)
+                            end
+                        end
+                    end
+                end)
+            end
+        end)
+    end
+end)
+
+pcall(function()
+    if InventoryController and InventoryController.OnInventoryItemEquipped then
+        InventoryController.OnInventoryItemEquipped:Connect(function(_, weapon)
+            if not weapon then return end
+            task.defer(function()
+                if weapon.Viewmodel and weapon.Viewmodel.Animation then
+                    hookAnimationReload(weapon.Viewmodel.Animation)
+                end
+                if weapon.CharacterAnimator then
+                    hookAnimationReload(weapon.CharacterAnimator)
+                end
+            end)
+        end)
+    end
+end)
+
 local espConn = RunService.RenderStepped:Connect(function()
     pcall(silentAimFrame)
     pcall(espFrame)
     pcall(SpectateChecker.update)
+
+    pcall(function()
+        local cam = workspace.CurrentCamera
+        if cam then
+            if W.customFov and W.fovValue then
+                cam.FieldOfView = W.fovValue
+            end
+        end
+
+        if W.thirdPerson and LP then
+            local clampedDist = math.clamp(W.thirdPersonDist or 10, 5, 50)
+            LP.CameraMode = Enum.CameraMode.Classic
+            LP.CameraMaxZoomDistance = clampedDist
+            LP.CameraMinZoomDistance = clampedDist
+        end
+    end)
 end)
 
 -- ===================== SOFT PASTEL LIGHT BLUE THEME =====================
@@ -1339,14 +1530,14 @@ navLayout.Parent = navBar
 local pageTabs, currentPage = {}, "skins"
 local setPage
 
-for _, nm in ipairs({ "SKINS", "ESP", "Silent", "GUN MODS", "MISC" }) do
+for _, nm in ipairs({ "SKINS", "ESP", "Silent", "GUN MODS", "WORLD", "MISC" }) do
     local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0.18, 0, 0, 24)
+    b.Size = UDim2.new(0.15, 0, 0, 24)
     b.BackgroundColor3 = T.card
     b.BackgroundTransparency = 0
     b.Text = nm
     b.TextColor3 = T.dim
-    b.TextSize = 11
+    b.TextSize = 10
     b.Font = MAIN_FONT
     b.AutoButtonColor = false
     b.Parent = navBar
@@ -1521,7 +1712,7 @@ local function toggle(parent, text, key, w, onChange, tbl)
     return row
 end
 
-local function buttonToggle(parent, text, tbl, key, opts, w)
+local function buttonToggle(parent, text, tbl, key, opts, w, onChange)
     local row = Instance.new("TextButton")
     row.Size = UDim2.new(0, w or 140, 0, 28)
     row.BackgroundColor3 = T.card
@@ -1550,6 +1741,7 @@ local function buttonToggle(parent, text, tbl, key, opts, w)
         tbl[key] = opts[idx]
         valLbl.Text = tostring(tbl[key])
         saveCfg()
+        if onChange then onChange(tbl[key]) end
     end)
     return row
 end
@@ -1640,7 +1832,7 @@ espSub.Size = UDim2.new(1, -20, 0, 12)
 espSub.Position = UDim2.new(0, 10, 0, 22)
 
 local espGrid = Instance.new("Frame")
-espGrid.Size = UDim2.new(1, -20, 0, 150)
+espGrid.Size = UDim2.new(1, -20, 0, 180)
 espGrid.Position = UDim2.new(0, 10, 0, 42)
 espGrid.BackgroundTransparency = 1
 espGrid.Parent = espPage
@@ -1659,9 +1851,11 @@ toggle(espGrid, "Distance", "distance", 140, nil, E)
 toggle(espGrid, "Weapon", "weapon", 140, nil, E)
 toggle(espGrid, "Tracers Outline", "tracers", 140, nil, E)
 toggle(espGrid, "Look Vector ESP", "lookVector", 140, nil, E)
+toggle(espGrid, "Highlights ESP", "highlights", 140, nil, E)
+toggle(espGrid, "HeadDot ESP", "headDot", 140, nil, E)
 toggle(espGrid, "Show team", "showTeam", 140, nil, E)
 
-slider(espPage, "Max distance", E, "maxDist", 200, 5000, 50, UDim2.new(0, 10, 0, 215), 320)
+slider(espPage, "Max distance", E, "maxDist", 200, 5000, 50, UDim2.new(0, 10, 0, 235), 320)
 
 -- SILENT AIM Page
 local aimPage = Instance.new("Frame")
@@ -1738,9 +1932,56 @@ toggle(gmGrid, "Custom RPM", "customRpm", 140, nil, G)
 toggle(gmGrid, "Full Auto", "autoFire", 140, nil, G)
 toggle(gmGrid, "No Recoil", "noRecoil", 140, nil, G)
 toggle(gmGrid, "No Spread", "noSpread", 140, nil, G)
+toggle(gmGrid, "Instant Reload", "instantReload", 140, nil, G)
 
 slider(gunModPage, "Fire Delay (Sec)", G, "firerateValue", 0.01, 0.2, 0.01, UDim2.new(0, 10, 0, 115), 320)
 slider(gunModPage, "Custom RPM Value", G, "rpmValue", 100, 3000, 50, UDim2.new(0, 10, 0, 160), 320)
+
+-- WORLD Page
+local worldPage = Instance.new("Frame")
+worldPage.Size = UDim2.new(1, -20, 1, -86)
+worldPage.Position = UDim2.new(0, 10, 0, 44)
+worldPage.BackgroundColor3 = T.panel
+worldPage.BackgroundTransparency = 0
+worldPage.BorderSizePixel = 0
+worldPage.Visible = false
+worldPage.Parent = main
+corner(worldPage, 8)
+stroke(worldPage, T.stroke, 1, 0.3)
+
+local wTitle = label(worldPage, "World Settings", 13, T.text, MAIN_FONT) 
+wTitle.Size = UDim2.new(1, -20, 0, 22) 
+wTitle.Position = UDim2.new(0, 10, 0, 4)
+
+local wSub = label(worldPage, "Environmental effects and player perspective controls.", 10, T.dim) 
+wSub.Size = UDim2.new(1, -20, 0, 12) 
+wSub.Position = UDim2.new(0, 10, 0, 22)
+
+local worldGrid = Instance.new("Frame")
+worldGrid.Size = UDim2.new(1, -20, 0, 100)
+worldGrid.Position = UDim2.new(0, 10, 0, 42)
+worldGrid.BackgroundTransparency = 1
+worldGrid.Parent = worldPage
+
+local wg = Instance.new("UIGridLayout") 
+wg.CellSize = UDim2.new(0, 160, 0, 28) 
+wg.CellPadding = UDim2.new(0, 6, 0, 6) 
+wg.Parent = worldGrid
+
+toggle(worldGrid, "Custom Camera FOV", "customFov", 160, function(val)
+    if not val and workspace.CurrentCamera then
+        workspace.CurrentCamera.FieldOfView = 70
+    end
+end, W)
+
+toggle(worldGrid, "Third Person", "thirdPerson", 160, function(val)
+    if not val and LP then
+        LP.CameraMode = Enum.CameraMode.LockFirstPerson
+    end
+end, W)
+
+slider(worldPage, "Camera FOV Value", W, "fovValue", 30, 120, 1, UDim2.new(0, 10, 0, 115), 320)
+slider(worldPage, "Third Person Distance", W, "thirdPersonDist", 5, 50, 1, UDim2.new(0, 10, 0, 165), 320)
 
 -- MISC Page
 local miscPage = Instance.new("Frame")
@@ -2019,6 +2260,7 @@ local function applyPageVisibility()
     espPage.Visible = (currentPage == "esp") and not collapsed
     aimPage.Visible = (currentPage == "silent") and not collapsed
     gunModPage.Visible = (currentPage == "gun mods") and not collapsed
+    worldPage.Visible = (currentPage == "world") and not collapsed
     miscPage.Visible = (currentPage == "misc") and not collapsed
     navBar.Visible = not collapsed
     
