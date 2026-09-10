@@ -1,5 +1,11 @@
 -- ============================================================
--- REBORN CS2 THEME - SOFT PASTEL LIGHT BLUE EDITION (UPDATED + WORLD TAB)
+--  RRRRR   EEEEEEE  BBBBBB    OOOOO   RRRRR   NN   NN 
+--  RR  RR  EE       BB   BB  OO   OO  RR  RR  NNN  NN 
+--  RRRRR   EEEEE    BBBBBB   OO   OO  RRRRR   NN N NN 
+--  RR  RR  EE       BB   BB  OO   OO  RR  RR  NN  NNN 
+--  RR  RR  EEEEEEE  BBBBBB    OOOOO   RR  RR  NN   NN 
+-- ============================================================
+-- REBORN Bloxstrike
 -- ============================================================
 
 if _G.RebornUnload then pcall(_G.RebornUnload) end
@@ -14,8 +20,7 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local LP = Players.LocalPlayer
 
--- ใช้ฟอนต์หลักเป็น Cartoon ตามที่ระบุ
-local MAIN_FONT = Enum.Font.Cartoon
+local MAIN_FONT = Enum.Font.SourceSansBold
 
 local function safeRequire(mod)
     local old = getthreadidentity and getthreadidentity()
@@ -425,7 +430,8 @@ local ESP_DEF = {
     tracers = false, 
     showTeam = false, 
     maxDist = 1500,
-    lookVector = false
+    lookVector = false,
+    highlights = true
 }
 for k, v in pairs(ESP_DEF) do if E[k] == nil then E[k] = v end end
 
@@ -477,6 +483,8 @@ local function D(cls, p)
     d.Visible = false
     return d
 end
+
+local highlightPool = {}
 
 local function newSet()
     local s = {}
@@ -547,9 +555,38 @@ local function weaponOf(plr)
     return ok and type(d) == "table" and d.Name or nil
 end
 
+local function updateHighlight(plr, char, show)
+    if not show or not E.highlights or not char then
+        if highlightPool[plr] then
+            highlightPool[plr]:Destroy()
+            highlightPool[plr] = nil
+        end
+        return
+    end
+
+    local hl = highlightPool[plr]
+    if not hl or hl.Parent ~= char then
+        if hl then hl:Destroy() end
+        hl = Instance.new("Highlight")
+        hl.Name = "RebornHighlight"
+        hl.Adornee = char
+        hl.FillColor = Color3.fromRGB(173, 216, 230) -- สีฟ้าอ่อน
+        hl.FillTransparency = 0.5                     -- โปร่งแสงกลางๆ ให้เห็นตัวละคร
+        hl.OutlineColor = Color3.fromRGB(255, 255, 255) -- Outline สีขาว
+        hl.OutlineTransparency = 0                  -- ขอบชัด 100%
+        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        hl.Parent = char
+        highlightPool[plr] = hl
+    end
+end
+
 local function espFrame()
     if not E.enabled then 
         for _, s in pairs(pool) do hideSet(s) end 
+        for plr, hl in pairs(highlightPool) do
+            hl:Destroy()
+            highlightPool[plr] = nil
+        end
         return 
     end
     
@@ -579,6 +616,8 @@ local function espFrame()
             if show and dist > E.maxDist then show = false end
             local x1, y1, x2, y2
             if show then x1, y1, x2, y2 = getBox(char, root, cam) if not x1 then show = false end end
+
+            updateHighlight(plr, char, show)
 
             if not show then 
                 hideSet(s) 
@@ -678,7 +717,14 @@ local function espFrame()
     end
     
     for plr, s in pairs(pool) do 
-        if plr.Parent ~= Players then removeSet(s) pool[plr] = nil end 
+        if plr.Parent ~= Players then 
+            removeSet(s) 
+            pool[plr] = nil 
+            if highlightPool[plr] then
+                highlightPool[plr]:Destroy()
+                highlightPool[plr] = nil
+            end
+        end 
     end
 end
 
@@ -1793,6 +1839,7 @@ eg.CellPadding = UDim2.new(0, 6, 0, 6)
 eg.Parent = espGrid
 
 toggle(espGrid, "ESP Enabled", "enabled", 140, nil, E)
+toggle(espGrid, "Highlights ESP", "highlights", 140, nil, E)
 toggle(espGrid, "Boxes", "boxes", 140, nil, E)
 toggle(espGrid, "Skeleton", "skeleton", 140, nil, E)
 toggle(espGrid, "Names", "names", 140, nil, E)
@@ -2261,6 +2308,10 @@ _G.RebornUnload = function()
     pcall(function() espConn:Disconnect() end)
     for _, s in pairs(pool) do removeSet(s) end
     pool = {}
+    for plr, hl in pairs(highlightPool) do
+        hl:Destroy()
+        highlightPool[plr] = nil
+    end
     pcall(fovO.Remove, fovO)
     pcall(fovC.Remove, fovC)
     pcall(function() gui:Destroy() end)
@@ -2334,17 +2385,3 @@ for _, obj in next, getgc(true) do
             end)
         end)
     end 
-
-    -- 4. NO SMOKE
-    if type(obj) == "function" and debug.getinfo(obj).name == "CreateVoxel" and debug.getupvalue(obj, 1) and tostring(debug.getupvalue(obj, 1)) == "Smoke" then
-        pcall(function()
-            local oldsmoke
-            oldsmoke = hookfunction(obj, function(...) 
-                if M.noSmoke then
-                    return
-                end
-                return oldsmoke(...)
-            end) 
-        end)
-    end
-end
