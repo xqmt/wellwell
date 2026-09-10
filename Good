@@ -5,7 +5,7 @@
 --  RR  RR  EE       BB   BB  OO   OO  RR  RR  NN  NNN 
 --  RR  RR  EEEEEEE  BBBBBB    OOOOO   RR  RR  NN   NN 
 -- ============================================================
--- REBORN Bloxstrike
+-- REBORN Bloxstrike -- Remake From Solo Script
 -- ============================================================
 
 if _G.RebornUnload then pcall(_G.RebornUnload) end
