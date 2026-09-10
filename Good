@@ -1,12 +1,3 @@
--- ============================================================
---  RRRRR   EEEEEEE  BBBBBB    OOOOO   RRRRR   NN   NN 
---  RR  RR  EE       BB   BB  OO   OO  RR  RR  NNN  NN 
---  RRRRR   EEEEE    BBBBBB   OO   OO  RRRRR   NN N NN 
---  RR  RR  EE       BB   BB  OO   OO  RR  RR  NN  NNN 
---  RR  RR  EEEEEEE  BBBBBB    OOOOO   RR  RR  NN   NN 
--- ============================================================
--- REBORN Bloxstrike -- Remake From Solo Script
--- ============================================================
 
 if _G.RebornUnload then pcall(_G.RebornUnload) end
 if _G.SoloScriptsUnload then pcall(_G.SoloScriptsUnload) end
