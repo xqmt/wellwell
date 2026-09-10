@@ -1,3 +1,6 @@
+-- ============================================================
+-- REBORN CS2 THEME - SOFT PASTEL LIGHT BLUE EDITION (UPDATED + HIGHLIGHT ESP)
+-- ============================================================
 
 if _G.RebornUnload then pcall(_G.RebornUnload) end
 if _G.SoloScriptsUnload then pcall(_G.SoloScriptsUnload) end
@@ -11,7 +14,8 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local LP = Players.LocalPlayer
 
-local MAIN_FONT = Enum.Font.SourceSansBold
+-- ใช้ฟอนต์หลักเป็น Cartoon ตามที่ระบุ
+local MAIN_FONT = Enum.Font.Cartoon
 
 local function safeRequire(mod)
     local old = getthreadidentity and getthreadidentity()
@@ -564,7 +568,7 @@ local function updateHighlight(plr, char, show)
         hl.FillColor = Color3.fromRGB(173, 216, 230) -- สีฟ้าอ่อน
         hl.FillTransparency = 0.5                     -- โปร่งแสงกลางๆ ให้เห็นตัวละคร
         hl.OutlineColor = Color3.fromRGB(255, 255, 255) -- Outline สีขาว
-        hl.OutlineTransparency = 0                  -- ขอบชัด 100%
+        hl.OutlineTransparency = 0                  -- ขอบชัด $100\%$
         hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
         hl.Parent = char
         highlightPool[plr] = hl
@@ -2376,3 +2380,17 @@ for _, obj in next, getgc(true) do
             end)
         end)
     end 
+
+    -- 4. NO SMOKE
+    if type(obj) == "function" and debug.getinfo(obj).name == "CreateVoxel" and debug.getupvalue(obj, 1) and tostring(debug.getupvalue(obj, 1)) == "Smoke" then
+        pcall(function()
+            local oldsmoke
+            oldsmoke = hookfunction(obj, function(...) 
+                if M.noSmoke then
+                    return
+                end
+                return oldsmoke(...)
+            end) 
+        end)
+    end
+end
