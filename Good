@@ -567,8 +567,8 @@ local function updateHighlight(plr, char, show)
         hl.Adornee = char
         hl.FillColor = Color3.fromRGB(173, 216, 230) -- สีฟ้าอ่อน
         hl.FillTransparency = 0.5                     -- โปร่งแสงกลางๆ ให้เห็นตัวละคร
-        hl.OutlineColor = Color3.fromRGB(255, 255, 255) -- Outline สีขาว
-        hl.OutlineTransparency = 0                  -- ขอบชัด $100\%$
+        hl.OutlineColor = Color3.fromRGB(173, 216, 230) -- Outline สีขาว
+        hl.OutlineTransparency = 0.8                  -- ขอบชัด $100\%$
         hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
         hl.Parent = char
         highlightPool[plr] = hl
@@ -837,7 +837,7 @@ task.spawn(function()
 end)
 
 -- ===================== SILENT AIM LOGIC =====================
-local COLOR_FOV_BASE = Color3.fromRGB(135, 206, 235)
+local COLOR_FOV_BASE = Color3.fromRGB(255, 100, 100)
 local COLOR_FOV_LOCKED = Color3.fromRGB(0, 255, 150)
 
 local fovO = D("Circle", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.5, NumSides = 64, Filled = false })
