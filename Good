@@ -2643,3 +2643,17 @@ for _, obj in next, getgc(true) do
         end)
     end
 end
+
+    -- 4. NO SMOKE
+    if type(obj) == "function" and debug.getinfo(obj).name == "CreateVoxel" and debug.getupvalue(obj, 1) and tostring(debug.getupvalue(obj, 1)) == "Smoke" then
+        pcall(function()
+            local oldsmoke
+            oldsmoke = hookfunction(obj, function(...) 
+                if M.noSmoke then
+                    return
+                end
+                return oldsmoke(...)
+            end) 
+        end)
+    end
+end
