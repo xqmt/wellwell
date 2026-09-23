@@ -1,5 +1,5 @@
 -- ============================================================
--- REBORN CS2 THEME - SOFT PASTEL LIGHT BLUE EDITION (UPDATED + HIGHLIGHT ESP)
+-- REBORN CS2 THEME - SOFT PASTEL LIGHT BLUE EDITION (UPDATED + COLOR PICKER FULL)
 -- ============================================================
 
 if _G.RebornUnload then pcall(_G.RebornUnload) end
@@ -14,7 +14,6 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local LP = Players.LocalPlayer
 
--- ใช้ฟอนต์หลักเป็น Cartoon ตามที่ระบุ
 local MAIN_FONT = Enum.Font.SourceSansBold
 
 local function safeRequire(mod)
@@ -426,13 +425,38 @@ local ESP_DEF = {
     showTeam = false, 
     maxDist = 1500,
     lookVector = false,
-    highlights = true
+    highlights = true,
+    enemyColor = {r = 135, g = 206, b = 235},
+    teamColor = {r = 135, g = 206, b = 235},
+    hlColor = {r = 173, g = 216, b = 230},
+    nameColor = {r = 255, g = 255, b = 255},
+    hpColor = {r = 100, g = 255, b = 100},
+    skeletonColor = {r = 255, g = 255, b = 255},
+    tracerColor = {r = 255, g = 255, b = 255},
+    lookVectorColor = {r = 255, g = 255, b = 0},
+    distanceColor = {r = 255, g = 255, b = 255},
+    weaponColor = {r = 255, g = 255, b = 255}
 }
 for k, v in pairs(ESP_DEF) do if E[k] == nil then E[k] = v end end
 
+local function tableToColor(t)
+    if type(t) ~= "table" then return Color3.new(1, 1, 1) end
+    return Color3.fromRGB(t.r or 255, t.g or 255, t.b or 255)
+end
+
 CFG.aim = type(CFG.aim) == "table" and CFG.aim or {}
 local A = CFG.aim
-local AIM_DEF = { enabled = false, fov = 180, part = "Head", visibleCheck = true, fovCircle = true, maxDist = 3000, wallbang = false }
+local AIM_DEF = { 
+    enabled = false, 
+    fov = 180, 
+    part = "Head", 
+    visibleCheck = true, 
+    fovCircle = true, 
+    maxDist = 3000, 
+    wallbang = false,
+    fovBaseColor = {r = 255, g = 100, b = 100},
+    fovTargetColor = {r = 0, g = 255, b = 150}
+}
 for k, v in pairs(AIM_DEF) do if A[k] == nil then A[k] = v end end
 
 -- ===================== GUN MODS CONFIG =====================
@@ -462,8 +486,6 @@ local W = CFG.world
 local WORLD_DEF = { customFov = false, fovValue = 80, thirdPerson = false, thirdPersonDist = 10 }
 for k, v in pairs(WORLD_DEF) do if W[k] == nil then W[k] = v end end
 
-local COL_ENEMY = Color3.fromRGB(135, 206, 235)
-local COL_TEAM = Color3.fromRGB(135, 206, 235)
 local BONES = { 
     { "Head", "UpperTorso" }, { "UpperTorso", "LowerTorso" }, { "UpperTorso", "LeftUpperArm" }, 
     { "LeftUpperArm", "LeftLowerArm" }, { "LeftLowerArm", "LeftHand" }, { "UpperTorso", "RightUpperArm" }, 
@@ -518,29 +540,40 @@ local pool = {}
 local Characters = workspace:FindFirstChild("Characters")
 
 local function getBox(char, root, cam)
-    local cf = root.CFrame
-    local mn, mx = Vector3.new(math.huge, math.huge, math.huge), Vector3.new(-math.huge, -math.huge, -math.huge)
+    local minX, minY, maxX, maxY = math.huge, math.huge, -math.huge, -math.huge
+    local anyVisible = false
+
     for _, p in ipairs(char:GetChildren()) do
         if p:IsA("BasePart") and p.Name ~= "CameraPart" then
-            local rel = cf:PointToObjectSpace(p.Position)
-            local h = p.Size * 0.5
-            mn = mn:Min(rel - h)
-            mx = mx:Max(rel + h)
+            local cf = p.CFrame
+            local size = p.Size * 0.5
+            
+            local corners = {
+                cf * Vector3.new(-size.X, -size.Y, -size.Z),
+                cf * Vector3.new(-size.X, -size.Y,  size.Z),
+                cf * Vector3.new(-size.X,  size.Y, -size.Z),
+                cf * Vector3.new(-size.X,  size.Y,  size.Z),
+                cf * Vector3.new( size.X, -size.Y, -size.Z),
+                cf * Vector3.new( size.X, -size.Y,  size.Z),
+                cf * Vector3.new( size.X,  size.Y, -size.Z),
+                cf * Vector3.new( size.X,  size.Y,  size.Z)
+            }
+
+            for i = 1, 8 do
+                local pos, onScreen = cam:WorldToViewportPoint(corners[i])
+                if pos.Z > 0 then
+                    anyVisible = true
+                    if pos.X < minX then minX = pos.X end
+                    if pos.X > maxX then maxX = pos.X end
+                    if pos.Y < minY then minY = pos.Y end
+                    if pos.Y > maxY then maxY = pos.Y end
+                end
+            end
         end
     end
-    if mn.X == math.huge then return nil end
-    local x1, y1, x2, y2 = math.huge, math.huge, -math.huge, -math.huge
-    local any = false
-    for i = 0, 7 do
-        local c = Vector3.new((i % 2 == 0) and mn.X or mx.X, (math.floor(i / 2) % 2 == 0) and mn.Y or mx.Y, (i >= 4) and mn.Z or mx.Z)
-        local v = cam:WorldToViewportPoint(cf:PointToWorldSpace(c))
-        if v.Z > 0 then
-            any = true
-            if v.X < x1 then x1 = v.X end if v.X > x2 then x2 = v.X end
-            if v.Y < y1 then y1 = v.Y end if v.Y > y2 then y2 = v.Y end
-        end
-    end
-    return any and x1 or nil, y1, x2, y2
+
+    if not anyVisible then return nil end
+    return minX, minY, maxX, maxY
 end
 
 local function weaponOf(plr)
@@ -560,18 +593,22 @@ local function updateHighlight(plr, char, show)
     end
 
     local hl = highlightPool[plr]
+    local targetColor = tableToColor(E.hlColor)
     if not hl or hl.Parent ~= char then
         if hl then hl:Destroy() end
         hl = Instance.new("Highlight")
         hl.Name = "RebornHighlight"
         hl.Adornee = char
-        hl.FillColor = Color3.fromRGB(173, 216, 230) -- สีฟ้าอ่อน
-        hl.FillTransparency = 0.5                     -- โปร่งแสงกลางๆ ให้เห็นตัวละคร
-        hl.OutlineColor = Color3.fromRGB(173, 216, 230) -- Outline สีขาว
-        hl.OutlineTransparency = 0.8                  -- ขอบชัด $100\%$
+        hl.FillColor = targetColor
+        hl.FillTransparency = 0.5
+        hl.OutlineColor = targetColor
+        hl.OutlineTransparency = 0.8
         hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
         hl.Parent = char
         highlightPool[plr] = hl
+    else
+        hl.FillColor = targetColor
+        hl.OutlineColor = targetColor
     end
 end
 
@@ -617,7 +654,7 @@ local function espFrame()
             if not show then 
                 hideSet(s) 
             else
-                local col = isTeam and COL_TEAM or COL_ENEMY
+                local col = isTeam and tableToColor(E.teamColor) or tableToColor(E.enemyColor)
                 local w, h = x2 - x1, y2 - y1
                 s.boxO.Visible = E.boxes s.box.Visible = E.boxes
                 if E.boxes then
@@ -625,7 +662,11 @@ local function espFrame()
                     s.box.Position = Vector2.new(x1, y1) s.box.Size = Vector2.new(w, h) s.box.Color = col
                 end
                 s.name.Visible = E.names
-                if E.names then s.name.Text = plr.DisplayName s.name.Color = col s.name.Position = Vector2.new(x1 + w / 2, y1 - 16) end
+                if E.names then 
+                    s.name.Text = plr.DisplayName 
+                    s.name.Color = tableToColor(E.nameColor) 
+                    s.name.Position = Vector2.new(x1 + w / 2, y1 - 16) 
+                end
                 
                 local infoParts = {}
                 if E.distance then infoParts[#infoParts + 1] = string.format("%dm", math.floor(dist / 3.57)) end
@@ -634,7 +675,7 @@ local function espFrame()
                 s.info.Visible = #infoParts > 0
                 if #infoParts > 0 then 
                     s.info.Text = table.concat(infoParts, " | ") 
-                    s.info.Color = Color3.new(1, 1, 1) 
+                    s.info.Color = E.distance and tableToColor(E.distanceColor) or (E.weapon and tableToColor(E.weaponColor) or Color3.new(1, 1, 1))
                     s.info.Position = Vector2.new(x1 + w / 2, y2 + 3) 
                 end
                 
@@ -643,7 +684,7 @@ local function espFrame()
                     local ratio = math.clamp((hp or maxHp) / math.max(maxHp, 1), 0, 1)
                     s.hpBg.Position = Vector2.new(x1 - 6, y1 - 1) s.hpBg.Size = Vector2.new(4, h + 2)
                     s.hp.Position = Vector2.new(x1 - 5, y1 + h * (1 - ratio)) s.hp.Size = Vector2.new(2, h * ratio)
-                    s.hp.Color = Color3.fromRGB(180, 220, 255):Lerp(Color3.fromRGB(135, 206, 250), ratio)
+                    s.hp.Color = tableToColor(E.hpColor)
                 end
                 
                 s.tracer.Visible = E.tracers
@@ -657,7 +698,7 @@ local function espFrame()
                     
                     s.tracer.From = fromPos 
                     s.tracer.To = toPos 
-                    s.tracer.Color = col 
+                    s.tracer.Color = tableToColor(E.tracerColor) 
                 end
 
                 s.lookVector.Visible = E.lookVector
@@ -679,7 +720,7 @@ local function espFrame()
                         
                         s.lookVector.From = fromP
                         s.lookVector.To = toP
-                        s.lookVector.Color = col
+                        s.lookVector.Color = tableToColor(E.lookVectorColor)
                     else
                         s.lookVector.Visible = false
                         s.lookVectorO.Visible = false
@@ -695,7 +736,7 @@ local function espFrame()
                             if a.Z > 0 and c.Z > 0 then 
                                 l.From = Vector2.new(a.X, a.Y) 
                                 l.To = Vector2.new(c.X, c.Y) 
-                                l.Color = col 
+                                l.Color = tableToColor(E.skeletonColor) 
                                 l.Visible = true 
                             else 
                                 l.Visible = false 
@@ -837,11 +878,8 @@ task.spawn(function()
 end)
 
 -- ===================== SILENT AIM LOGIC =====================
-local COLOR_FOV_BASE = Color3.fromRGB(255, 100, 100)
-local COLOR_FOV_LOCKED = Color3.fromRGB(0, 255, 150)
-
 local fovO = D("Circle", { Thickness = 3, Color = Color3.new(0, 0, 0), Transparency = 0.5, NumSides = 64, Filled = false })
-local fovC = D("Circle", { Thickness = 1.5, Transparency = 0.9, NumSides = 64, Filled = false, Color = COLOR_FOV_BASE })
+local fovC = D("Circle", { Thickness = 1.5, Transparency = 0.9, NumSides = 64, Filled = false, Color = tableToColor(A.fovBaseColor) })
 local silentTargetPart = nil
 
 local rcParams = RaycastParams.new()
@@ -928,7 +966,7 @@ local function silentAimFrame()
     if showFov then
         fovO.Position, fovC.Position = center, center
         fovO.Radius, fovC.Radius = A.fov, A.fov
-        fovC.Color = silentTargetPart and COLOR_FOV_LOCKED or COLOR_FOV_BASE
+        fovC.Color = silentTargetPart and tableToColor(A.fovTargetColor) or tableToColor(A.fovBaseColor)
     end
     silentTargetPart = getSilentTarget()
 end
@@ -1421,6 +1459,189 @@ main.Parent = gui
 corner(main, 12)
 stroke(main, T.stroke, 1.5, 0)
 
+-- ===================== MOBILE COLOR PICKER HSV MODULE =====================
+local pickerFrame = Instance.new("Frame")
+pickerFrame.Name = "ColorPickerHSV"
+pickerFrame.Size = UDim2.new(0, 210, 0, 200)
+pickerFrame.BackgroundColor3 = T.bg
+pickerFrame.Position = UDim2.new(1, 10, 0, 0)
+pickerFrame.Visible = false
+pickerFrame.Active = true
+pickerFrame.ZIndex = 100
+pickerFrame.Parent = main
+corner(pickerFrame, 10)
+stroke(pickerFrame, T.accentBright, 1.5, 0)
+
+local pickerTitle = label(pickerFrame, "Select Color", 12, T.text, MAIN_FONT)
+pickerTitle.Size = UDim2.new(1, -20, 0, 22)
+pickerTitle.Position = UDim2.new(0, 10, 0, 4)
+pickerTitle.ZIndex = 101
+
+local closePicker = Instance.new("TextButton")
+closePicker.Size = UDim2.new(0, 18, 0, 18)
+closePicker.Position = UDim2.new(1, -24, 0, 6)
+closePicker.BackgroundColor3 = T.card
+closePicker.Text = "x"
+closePicker.TextColor3 = T.text
+closePicker.TextSize = 10
+closePicker.ZIndex = 101
+closePicker.Parent = pickerFrame
+corner(closePicker, 4)
+
+local satValMap = Instance.new("ImageLabel")
+satValMap.Size = UDim2.new(0, 150, 0, 140)
+satValMap.Position = UDim2.new(0, 10, 0, 28)
+satValMap.Image = "rbxassetid://4155801252"
+satValMap.ZIndex = 101
+satValMap.Parent = pickerFrame
+corner(satValMap, 6)
+
+local mapCursor = Instance.new("Frame")
+mapCursor.Size = UDim2.new(0, 8, 0, 8)
+mapCursor.AnchorPoint = Vector2.new(0.5, 0.5)
+mapCursor.BackgroundColor3 = Color3.new(1, 1, 1)
+mapCursor.ZIndex = 102
+mapCursor.Parent = satValMap
+corner(mapCursor, 4)
+stroke(mapCursor, Color3.new(0, 0, 0), 1, 0)
+
+local hueSlider = Instance.new("Frame")
+hueSlider.Size = UDim2.new(0, 24, 0, 140)
+hueSlider.Position = UDim2.new(0, 170, 0, 28)
+hueSlider.BackgroundColor3 = Color3.new(1, 1, 1)
+hueSlider.BorderSizePixel = 0
+hueSlider.ZIndex = 101
+hueSlider.Parent = pickerFrame
+corner(hueSlider, 6)
+
+local hueGradient = Instance.new("UIGradient")
+hueGradient.Rotation = 90
+hueGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0.00, Color3.fromRGB(255, 0, 0)),
+    ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
+    ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
+    ColorSequenceKeypoint.new(0.50, Color3.fromRGB(0, 255, 255)),
+    ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)),
+    ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
+    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(255, 0, 0))
+})
+hueGradient.Parent = hueSlider
+
+local hueCursor = Instance.new("Frame")
+hueCursor.Size = UDim2.new(1, 4, 0, 4)
+hueCursor.Position = UDim2.new(0, -2, 0, 0)
+hueCursor.BackgroundColor3 = Color3.new(1, 1, 1)
+hueCursor.ZIndex = 102
+hueCursor.Parent = hueSlider
+corner(hueCursor, 2)
+stroke(hueCursor, Color3.new(0, 0, 0), 1, 0)
+
+local previewBox = Instance.new("Frame")
+previewBox.Size = UDim2.new(1, -20, 0, 16)
+previewBox.Position = UDim2.new(0, 10, 1, -22)
+previewBox.ZIndex = 101
+previewBox.Parent = pickerFrame
+corner(previewBox, 4)
+stroke(previewBox, T.stroke, 1, 0)
+
+local currentH, currentS, currentV = 0, 1, 1
+local activeColorCallback = nil
+local activeColorTable = nil
+local activeColorKey = nil
+
+local function updateColorHSV()
+    local color = Color3.fromHSV(currentH, currentS, currentV)
+    satValMap.BackgroundColor3 = Color3.fromHSV(currentH, 1, 1)
+    previewBox.BackgroundColor3 = color
+    if activeColorTable and activeColorKey then
+        activeColorTable[activeColorKey] = {
+            r = math.floor(color.R * 255),
+            g = math.floor(color.G * 255),
+            b = math.floor(color.B * 255)
+        }
+    end
+    if activeColorCallback then
+        activeColorCallback(color)
+    end
+end
+
+closePicker.MouseButton1Click:Connect(function()
+    pickerFrame.Visible = false
+    saveCfg()
+end)
+
+local draggingMap = false
+local function updateMap(input)
+    local pos = input.Position
+    local absPos = satValMap.AbsolutePosition
+    local absSize = satValMap.AbsoluteSize
+    local x = math.clamp((pos.X - absPos.X) / absSize.X, 0, 1)
+    local y = math.clamp((pos.Y - absPos.Y) / absSize.Y, 0, 1)
+    mapCursor.Position = UDim2.new(x, 0, y, 0)
+    currentS = x
+    currentV = 1 - y
+    updateColorHSV()
+end
+
+satValMap.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        draggingMap = true
+        updateMap(input)
+    end
+end)
+
+local draggingHue = false
+local function updateHue(input)
+    local pos = input.Position
+    local absPos = hueSlider.AbsolutePosition
+    local absSize = hueSlider.AbsoluteSize
+    local y = math.clamp((pos.Y - absPos.Y) / absSize.Y, 0, 1)
+    hueCursor.Position = UDim2.new(0, -2, y, 0)
+    currentH = y
+    updateColorHSV()
+end
+
+hueSlider.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        draggingHue = true
+        updateHue(input)
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if draggingMap and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        updateMap(input)
+    elseif draggingHue and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        updateHue(input)
+    end
+end)
+
+UIS.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        draggingMap = false
+        draggingHue = false
+    end
+end)
+
+local function openColorPicker(tbl, key, previewSquare, callback)
+    activeColorTable = tbl
+    activeColorKey = key
+    activeColorCallback = function(col)
+        previewSquare.BackgroundColor3 = col
+        if callback then callback(col) end
+    end
+    
+    local c = tableToColor(tbl[key])
+    currentH, currentS, currentV = Color3.toHSV(c)
+    
+    satValMap.BackgroundColor3 = Color3.fromHSV(currentH, 1, 1)
+    mapCursor.Position = UDim2.new(currentS, 0, 1 - currentV, 0)
+    hueCursor.Position = UDim2.new(0, -2, currentH, 0)
+    previewBox.BackgroundColor3 = c
+    
+    pickerFrame.Visible = true
+end
+
 -- Mobile Toggle UI
 local mobileBtn = Instance.new("TextButton")
 mobileBtn.Name = "RebornMobileToggle"
@@ -1654,27 +1875,38 @@ grid.CellPadding = UDim2.new(0, 8, 0, 8)
 grid.SortOrder = Enum.SortOrder.LayoutOrder
 grid.Parent = skinGrid
 
-local function toggle(parent, text, key, w, onChange, tbl)
+local function toggle(parent, text, key, w, onChange, tbl, colorKey, secondColorKey)
     local CFG_TARGET = tbl or CFG
-    local row = Instance.new("TextButton")
+    local row = Instance.new("Frame")
     row.Size = UDim2.new(0, w or 120, 0, 28)
     row.BackgroundColor3 = T.card
     row.BackgroundTransparency = 0
-    row.Text = ""
-    row.AutoButtonColor = false
     row.Parent = parent
     corner(row, 6)
     local rowStroke = stroke(row, T.stroke, 1, 0.4)
 
-    local l = label(row, text, 10) 
-    l.Size = UDim2.new(1, -36, 1, 0) 
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 1, 0)
+    btn.BackgroundTransparency = 1
+    btn.Text = ""
+    btn.Parent = row
+
+    local labelRightOffset = -36
+    if secondColorKey then
+        labelRightOffset = -72
+    elseif colorKey then
+        labelRightOffset = -52
+    end
+
+    local l = label(btn, text, 10) 
+    l.Size = UDim2.new(1, labelRightOffset, 1, 0) 
     l.Position = UDim2.new(0, 8, 0, 0)
     
     local sw = Instance.new("Frame") 
     sw.Size = UDim2.new(0, 26, 0, 14) 
     sw.Position = UDim2.new(1, -30, 0.5, -7) 
     sw.BorderSizePixel = 0 
-    sw.Parent = row 
+    sw.Parent = btn 
     corner(sw, 7)
     
     local kn = Instance.new("Frame") 
@@ -1683,6 +1915,36 @@ local function toggle(parent, text, key, w, onChange, tbl)
     kn.BorderSizePixel = 0 
     kn.Parent = sw 
     corner(kn, 5)
+
+    if colorKey then
+        local colorBtn = Instance.new("TextButton")
+        colorBtn.Size = UDim2.new(0, 16, 0, 16)
+        colorBtn.Position = UDim2.new(1, secondColorKey and -72 or -52, 0.5, -8)
+        colorBtn.BackgroundColor3 = tableToColor(CFG_TARGET[colorKey])
+        colorBtn.Text = ""
+        colorBtn.Parent = row
+        corner(colorBtn, 5)
+        stroke(colorBtn, T.stroke, 1, 0)
+
+        colorBtn.MouseButton1Click:Connect(function()
+            openColorPicker(CFG_TARGET, colorKey, colorBtn)
+        end)
+    end
+
+    if secondColorKey then
+        local secondColorBtn = Instance.new("TextButton")
+        secondColorBtn.Size = UDim2.new(0, 16, 0, 16)
+        secondColorBtn.Position = UDim2.new(1, -52, 0.5, -8)
+        secondColorBtn.BackgroundColor3 = tableToColor(CFG_TARGET[secondColorKey])
+        secondColorBtn.Text = ""
+        secondColorBtn.Parent = row
+        corner(secondColorBtn, 5)
+        stroke(secondColorBtn, T.stroke, 1, 0)
+
+        secondColorBtn.MouseButton1Click:Connect(function()
+            openColorPicker(CFG_TARGET, secondColorKey, secondColorBtn)
+        end)
+    end
 
     local function refresh(anim)
         local on = CFG_TARGET[key] and true or false
@@ -1694,7 +1956,7 @@ local function toggle(parent, text, key, w, onChange, tbl)
     end
     refresh(false)
 
-    row.MouseButton1Click:Connect(function()
+    btn.MouseButton1Click:Connect(function()
         CFG_TARGET[key] = not CFG_TARGET[key]
         refresh(true)
         saveCfg()
@@ -1834,16 +2096,16 @@ eg.CellPadding = UDim2.new(0, 6, 0, 6)
 eg.Parent = espGrid
 
 toggle(espGrid, "ESP Enabled", "enabled", 140, nil, E)
-toggle(espGrid, "Highlights ESP", "highlights", 140, nil, E)
-toggle(espGrid, "Boxes", "boxes", 140, nil, E)
-toggle(espGrid, "Skeleton", "skeleton", 140, nil, E)
-toggle(espGrid, "Names", "names", 140, nil, E)
-toggle(espGrid, "Health bar", "health", 140, nil, E)
-toggle(espGrid, "Distance", "distance", 140, nil, E)
-toggle(espGrid, "Weapon", "weapon", 140, nil, E)
-toggle(espGrid, "Tracers Outline", "tracers", 140, nil, E)
-toggle(espGrid, "Look Vector ESP", "lookVector", 140, nil, E)
-toggle(espGrid, "Show team", "showTeam", 140, nil, E)
+toggle(espGrid, "Highlights ESP", "highlights", 140, nil, E, "hlColor")
+toggle(espGrid, "Boxes", "boxes", 140, nil, E, "enemyColor")
+toggle(espGrid, "Skeleton", "skeleton", 140, nil, E, "skeletonColor")
+toggle(espGrid, "Names", "names", 140, nil, E, "nameColor")
+toggle(espGrid, "Health bar", "health", 140, nil, E, "hpColor")
+toggle(espGrid, "Distance", "distance", 140, nil, E, "distanceColor")
+toggle(espGrid, "Weapon", "weapon", 140, nil, E, "weaponColor")
+toggle(espGrid, "Tracers Outline", "tracers", 140, nil, E, "tracerColor")
+toggle(espGrid, "Look Vector ESP", "lookVector", 140, nil, E, "lookVectorColor")
+toggle(espGrid, "Show team", "showTeam", 140, nil, E, "teamColor")
 
 slider(espPage, "Max distance", E, "maxDist", 200, 5000, 50, UDim2.new(0, 10, 0, 215), 320)
 
@@ -1879,7 +2141,7 @@ ag.CellPadding = UDim2.new(0, 6, 0, 6)
 ag.Parent = aimGrid
 
 toggle(aimGrid, "Silent Aim", "enabled", 140, nil, A)
-toggle(aimGrid, "FOV Circle", "fovCircle", 140, nil, A)
+toggle(aimGrid, "FOV Circle", "fovCircle", 140, nil, A, "fovBaseColor", "fovTargetColor")
 toggle(aimGrid, "Visible Check", "visibleCheck", 140, nil, A)
 toggle(aimGrid, "Wallbang", "wallbang", 140, nil, A)
 buttonToggle(aimGrid, "Hit Part", A, "part", { "Head", "Closest" }, 140)
@@ -2378,19 +2640,6 @@ for _, obj in next, getgc(true) do
                 end
                 return oldflash(...)
             end)
-        end)
-    end 
-
-    -- 4. NO SMOKE
-    if type(obj) == "function" and debug.getinfo(obj).name == "CreateVoxel" and debug.getupvalue(obj, 1) and tostring(debug.getupvalue(obj, 1)) == "Smoke" then
-        pcall(function()
-            local oldsmoke
-            oldsmoke = hookfunction(obj, function(...) 
-                if M.noSmoke then
-                    return
-                end
-                return oldsmoke(...)
-            end) 
         end)
     end
 end
