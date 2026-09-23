@@ -1,3 +1,4 @@
+
 -- ============================================================
 -- REBORN CS2 THEME - SOFT PASTEL LIGHT BLUE EDITION (UPDATED + COLOR PICKER FULL)
 -- ============================================================
@@ -1378,16 +1379,16 @@ end)
 
 -- ===================== SOFT PASTEL LIGHT BLUE THEME =====================
 local T = {
-    bg = Color3.fromRGB(240, 246, 252),          
-    panel = Color3.fromRGB(225, 235, 245),       
-    card = Color3.fromRGB(255, 255, 255),        
-    stroke = Color3.fromRGB(190, 210, 230),      
-    accent = Color3.fromRGB(120, 180, 235),      
+    bg = Color3.fromRGB(8, 8, 8),          
+    panel = Color3.fromRGB(7, 7, 7),       
+    card = Color3.fromRGB(7, 7, 7),        
+    stroke = Color3.fromRGB(24, 24, 24),      
+    accent = Color3.fromRGB(80, 150, 220),      
     accentBright = Color3.fromRGB(80, 150, 220),  
-    accentDim = Color3.fromRGB(205, 225, 245),   
-    text = Color3.fromRGB(45, 60, 80),           
+    accentDim = Color3.fromRGB(0, 0, 0),   
+    text = Color3.fromRGB(255, 255, 255),           
     dim = Color3.fromRGB(120, 140, 165),         
-    off = Color3.fromRGB(200, 215, 230),         
+    off = Color3.fromRGB(11, 11, 11),         
     green = Color3.fromRGB(100, 200, 160),       
 }
 
