@@ -2274,7 +2274,6 @@ toggle(miscGrid, "Specter Checked", "specterChecked", 155, function(val)
     end
 end, M)
 toggle(miscGrid, "No Flash", "noFlash", 155, nil, M)
-toggle(miscGrid, "No Smoke", "noSmoke", 155, nil, M)
 
 -- Skins Logic UI
 local selectedWeapon = nil
@@ -2640,20 +2639,6 @@ for _, obj in next, getgc(true) do
                 end
                 return oldflash(...)
             end)
-        end)
-    end
-end
-
-    -- 4. NO SMOKE
-    if type(obj) == "function" and debug.getinfo(obj).name == "CreateVoxel" and debug.getupvalue(obj, 1) and tostring(debug.getupvalue(obj, 1)) == "Smoke" then
-        pcall(function()
-            local oldsmoke
-            oldsmoke = hookfunction(obj, function(...) 
-                if M.noSmoke then
-                    return
-                end
-                return oldsmoke(...)
-            end) 
         end)
     end
 end
