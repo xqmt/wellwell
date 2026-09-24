@@ -799,7 +799,7 @@ function SpectateChecker.init()
         frame.Name = "SpectatorCard"
         frame.Size = UDim2.new(0, 190, 0, 32)
         frame.Position = UDim2.new(0.5, -95, 0.05, 0)
-        frame.BackgroundColor3 = Color3.fromRGB(240, 246, 252)
+        frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
         frame.BackgroundTransparency = 0
         frame.BorderSizePixel = 0
         frame.Visible = false
@@ -821,7 +821,7 @@ function SpectateChecker.init()
         specLabel.BackgroundTransparency = 1
         specLabel.Font = MAIN_FONT
         specLabel.TextSize = 13
-        specLabel.TextColor3 = Color3.fromRGB(45, 60, 80)
+        specLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         specLabel.Text = ""
         specLabel.Parent = frame
     end)
@@ -838,7 +838,7 @@ function SpectateChecker.update()
         local specCount = LP:GetAttribute("Spectators") or 0
         if specCount > 0 then
             card.Visible = true
-            specLabel.Text = string.format("Spectating You: %d", specCount)
+            specLabel.Text = string.format("👀 Spectating You: %d", specCount)
         else
             card.Visible = false
             specLabel.Text = ""
